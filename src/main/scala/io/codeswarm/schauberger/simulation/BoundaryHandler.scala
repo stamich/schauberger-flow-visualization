@@ -3,9 +3,13 @@ package io.codeswarm.schauberger.simulation
 import io.codeswarm.schauberger.geometry.PipeGeometry
 import io.codeswarm.schauberger.model.{Particle, SimulationParameters}
 
-/** Enforces the simulation-domain boundary semantics. */
+/** Strategy enforcing hard domain boundaries after numerical integration. */
 trait BoundaryHandler {
-
-  /** Corrects or respawns a particle after numerical integration. */
-  def handle(particle: Particle, geometry: PipeGeometry, parameters: SimulationParameters): Particle
+  /** Applies axial respawn and radial confinement to one particle. */
+  def handle(
+      particle: Particle,
+      geometry: PipeGeometry,
+      parameters: SimulationParameters,
+      generator: ParticleGenerator
+  ): Particle
 }
