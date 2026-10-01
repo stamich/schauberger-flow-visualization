@@ -34,6 +34,8 @@ trait PipeGeometry {
   def boundingRadius: Double = crossSection.boundingRadius
   /** Twist rate in radians per axial simulation unit. */
   def twistRate: Double
+  /** Returns local twist rate; future curved/tapered geometries may vary it with x. */
+  def twistRateAt(x: Double): Double = twistRate
   /** Local cross-section rotation angle at x. */
   def rotationAngleAt(x: Double): Double
 }
