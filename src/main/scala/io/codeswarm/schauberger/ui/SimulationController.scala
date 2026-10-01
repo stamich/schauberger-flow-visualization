@@ -52,7 +52,7 @@ final class SimulationController(
   def fps: Double = fpsValue
 
   /** Calculates current aggregate flow diagnostics. */
-  def metrics: FlowMetrics = metricsCalculator.calculate(stateValue, geometryValue)
+  def metrics: FlowMetrics = metricsCalculator.calculate(stateValue, geometryValue, simulationValue)
 
   /** Starts or resumes physics updates. */
   def start(): Unit = runningValue = true
@@ -94,11 +94,11 @@ final class SimulationController(
         accumulator -= simulationValue.fixedTimeStep
       }
     }
-    renderer.render(stateValue, geometryValue, visualizationValue)
+    renderer.render(stateValue, geometryValue, simulationValue, visualizationValue)
   }
 
   /** Renders the current state without advancing physics. */
-  def renderCurrent(): Unit = renderer.render(stateValue, geometryValue, visualizationValue)
+  def renderCurrent(): Unit = renderer.render(stateValue, geometryValue, simulationValue, visualizationValue)
 
   /** Updates the rolling FPS estimate approximately once per second. */
   private def updateFps(frameSeconds: Double): Unit = {

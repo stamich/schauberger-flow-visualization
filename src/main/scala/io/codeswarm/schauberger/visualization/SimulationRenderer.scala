@@ -1,23 +1,25 @@
 package io.codeswarm.schauberger.visualization
 
 import io.codeswarm.schauberger.geometry.PipeGeometry
-import io.codeswarm.schauberger.model.{SimulationState, ViewMode, VisualizationParameters}
+import io.codeswarm.schauberger.model.{SimulationParameters, SimulationState, ViewMode, VisualizationParameters}
 import scalafx.scene.canvas.Canvas
 import scalafx.scene.paint.Color
 
-/** Coordinates geometry, fading trails and particles on one ScalaFX Canvas. */
+/** Coordinates geometry, fading trails, particles and secondary vector field on one Canvas. */
 final class SimulationRenderer(
     canvas: Canvas,
     pipeRenderer: PipeRenderer,
     particleRenderer: ParticleRenderer,
     trailRenderer: TrailRenderer,
-    trailBuffer: TrailBuffer
+    trailBuffer: TrailBuffer,
+    vectorFieldRenderer: VectorFieldRenderer
 ) {
 
-  /** Renders one complete frame using the selected projection and cross-section slice. */
+  /** Renders one complete frame using current physical and visualization parameters. */
   def render(
       state: SimulationState,
       geometry: PipeGeometry,
+      simulation: SimulationParameters,
       visualization: VisualizationParameters
   ): Unit = {
     val graphics = canvas.graphicsContext2D
@@ -29,14 +31,7 @@ final class SimulationRenderer(
       case ViewMode.Longitudinal =>
         (
           new LongitudinalProjection: Projection,
-          ViewportTransform(
-            0.0,
-            geometry.length,
-            -geometry.boundingRadius,
-            geometry.boundingRadius,
-            canvas.width.value,
-            canvas.height.value
-          )
+          ViewportTransform(0.0, geometry.length, -geometry.boundingRadius, geometry.boundingRadius, canvas.width.value, canvas.height.value)
         )
       case ViewMode.CrossSection =>
         val margin = geometry.boundingRadius * 1.08
@@ -46,13 +41,18 @@ final class SimulationRenderer(
         )
     }
 
-    trailBuffer.record(
-      state,
-      visualization.trailLength,
-      visualization.trailDurationSeconds,
-      visualization.trailSampleEveryFrames
-    )
+    trailBuffer.record(state, visualization.trailLength, visualization.trailDurationSeconds, visualization.trailSampleEveryFrames)
     pipeRenderer.render(graphics, geometry, transform, visualization, sliceX)
+    if (visualization.viewMode == ViewMode.CrossSection && visualization.showSecondaryVectors) {
+      vectorFieldRenderer.render(
+        graphics,
+        geometry,
+        transform,
+        sliceX,
+        simulation.secondaryFlow,
+        visualization.vectorFieldResolution
+      )
+    }
     trailRenderer.render(graphics, state, trailBuffer, projection, transform, visualization, sliceX)
     particleRenderer.render(graphics, state, geometry, projection, transform, visualization, sliceX)
   }
