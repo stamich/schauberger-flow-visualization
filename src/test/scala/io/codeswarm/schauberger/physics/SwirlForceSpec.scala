@@ -18,16 +18,15 @@ class SwirlForceSpec extends AnyFunSuite {
     val base = SimulationParameters.Default
     val ccwParameters = base.copy(swirl = base.swirl.copy(rotationDirection = RotationDirection.CounterClockwise))
     val cwParameters = base.copy(swirl = base.swirl.copy(rotationDirection = RotationDirection.Clockwise))
-    val ccw = force.acceleration(particle, FlowContext(pipe, ccwParameters))
-    val cw = force.acceleration(particle, FlowContext(pipe, cwParameters))
+    val ccw = force.acceleration(PhysicsTestSupport.context(particle, pipe, ccwParameters))
+    val cw = force.acceleration(PhysicsTestSupport.context(particle, pipe, cwParameters))
     assert(ccw.dot(cw) < 0.0)
   }
 
   test("centerline particle receives no swirl") {
-    val force = new SwirlForce(new SolidBodySwirlProfile)
-    val acceleration = force.acceleration(
-      Particle(1L, Vector3D(20.0, 0.0, 0.0), Vector3D.Zero),
-      FlowContext(pipe, SimulationParameters.Default)
+    val particle = Particle(1L, Vector3D(20.0, 0.0, 0.0), Vector3D.Zero)
+    val acceleration = (new SwirlForce(new SolidBodySwirlProfile)).acceleration(
+      PhysicsTestSupport.context(particle, pipe, SimulationParameters.Default)
     )
     assert(acceleration.magnitude < 1e-9)
   }

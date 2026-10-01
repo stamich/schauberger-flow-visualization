@@ -8,14 +8,11 @@ import io.codeswarm.schauberger.physics.secondary.SecondaryFlowModel
 /** Computes geometry-aware aggregate diagnostics without changing simulation state. */
 final class FlowMetricsCalculator(
     secondaryFlowModel: SecondaryFlowModel,
-    velocityDecomposer: VelocityDecomposer = new VelocityDecomposer
+    velocityDecomposer: VelocityDecomposer = new VelocityDecomposer,
+    geometryContextCalculator: GeometryContextCalculator = new DefaultGeometryContextCalculator
 ) {
   /** Calculates axial, swirl, occupancy and secondary-flow diagnostics. */
-  def calculate(
-      state: SimulationState,
-      geometry: PipeGeometry,
-      parameters: SimulationParameters
-  ): FlowMetrics = {
+  def calculate(state: SimulationState, geometry: PipeGeometry, parameters: SimulationParameters): FlowMetrics = {
     if (state.particles.isEmpty) FlowMetrics.Zero
     else {
       var axial = 0.0
@@ -28,26 +25,18 @@ final class FlowMetricsCalculator(
       var totalEnergy = 0.0
 
       state.particles.foreach { particle =>
-        val tangent = geometry.tangentAt(particle.position).normalized
-        val center = geometry.centerLinePosition(particle.position.x)
-        val raw = particle.position - center
-        val radial = raw - tangent * raw.dot(tangent)
-        val r = radial.magnitude
-        val components = velocityDecomposer.decompose(particle, geometry)
+        val g = geometryContextCalculator.calculate(particle, geometry)
+        val radial = g.frame.crossSectionVectorToWorld(g.localPosition)
+        val radius = radial.magnitude
+        val components = velocityDecomposer.decompose(particle, g)
         axial += components.axial
-        radialNorm += math.max(0.0, math.min(1.0, geometry.crossSection.normalizedRadius(geometry.toLocalCrossSection(particle.position))))
-        if (r > Vector3D.Epsilon) {
+        radialNorm += math.max(0.0, math.min(1.0, geometry.crossSection.normalizedRadius(g.localPosition)))
+        if (radius > Vector3D.Epsilon) {
           tangential += components.tangential
-          angular += components.tangential / r
+          angular += components.tangential / radius
           angularCount += 1
         }
-
-        val targetSecondary = secondaryFlowModel.targetVelocity(
-          geometry.toLocalCrossSection(particle.position),
-          geometry,
-          particle.position.x,
-          parameters.secondaryFlow
-        )
+        val targetSecondary = secondaryFlowModel.targetVelocity(g.localPosition, geometry, particle.position.x, parameters.secondaryFlow)
         val speed = targetSecondary.magnitude
         secondarySpeed += speed
         secondaryEnergy += speed * speed

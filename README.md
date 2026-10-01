@@ -1,160 +1,130 @@
 # Schauberger Flow Visualization
 
-> Buildfix: **0.4.0-buildfix1** fixes ScalaFX `TextField` construction in `NumericSliderField`.
+Scala/ScalaFX particle visualization of helical, geometry-driven and secondary-flow concepts inspired by Viktor Schauberger's observations of water vortices.
 
-Scala/ScalaFX particle visualization of helical and geometry-driven flow concepts inspired by Viktor Schauberger's observations of water vortices.
+> This is an educational and experimental visualization. It is not a Navier–Stokes CFD solver and does not claim to validate Schauberger's broader physical theories.
 
-> This project is an educational and experimental visualization. It does **not** claim to validate Schauberger's broader physical theories and it is not a Navier-Stokes CFD solver.
+## Milestone 0.5.0 — Flow diagnostics and geometry performance pass
 
-## Milestone 0.4.0
+Milestone 0.5 builds on 0.4.0-buildfix1 and focuses on two goals:
 
-Milestone 0.4 adds **geometry-induced secondary flow** to the 0.3 geometry model. A twisted ovoid pipe can now influence the local cross-sectional target velocity field in addition to axial flow and swirl.
+1. calculate expensive local geometry data once per particle update,
+2. expose cross-section velocity and vorticity diagnostics as heat maps.
 
-The physical acceleration model is conceptually:
+The physical acceleration model remains:
 
-\[
-\vec a = \vec a_{axial} + \vec a_{swirl} + \vec a_{secondary} + \vec a_{wall}
-\]
+```text
+axial + swirl + secondary + wall
+```
 
-The new secondary model is intentionally named `TwinVortexSecondaryFlow`: it is a smooth educational vector field shaped by local twist and wall distance, not a claim that the simulation reproduces a specific measured Schauberger device or a complete Dean-vortex solution.
+but force strategies now share a `ParticleGeometryContext`.
 
-## Scala / ScalaFX baseline
+## Technology
 
 - Scala 2.13.15
 - ScalaFX 21
 - JavaFX 21
 - JDK 21
-- Gradle
+- Gradle 8.x
 - ScalaTest + JUnitRunner
+- GitHub Actions CI
 
-The domain simulation remains independent of ScalaFX. ScalaFX is used only for application composition, controls and Canvas rendering.
-
-## Default parameters
-
-Defaults remain deliberately readable rather than dense:
+## Default visualization
 
 | Parameter | Default |
 |---|---:|
-| Particles | **750** |
-| Axial velocity | **90.0** |
-| Axial response | **2.2** |
-| Angular velocity | **0.55** |
-| Swirl response | **2.0** |
-| Secondary flow | **enabled** |
-| Secondary strength | **18.0** |
-| Secondary response | **1.5** |
-| Boundary fade distance | **18.0** |
-| Trail samples | **48** |
-| Trail lifetime | **2.0 s** |
-| Trail sample interval | **4 physics frames** |
-| Vector-field grid | **15 x 15** |
+| Particles | 750 |
+| Axial velocity | 90.0 |
+| Angular velocity | 0.55 |
+| Swirl response | 2.0 |
+| Secondary flow | enabled |
+| Trail samples | 48 |
+| Trail lifetime | 2.0 s |
+| Heat map | enabled |
+| Heat-map field | Velocity magnitude |
+| Heat-map resolution | 30 x 30 |
+| Secondary vectors | disabled by default |
 
-All values are simulation units unless explicitly stated otherwise.
+All numeric sliders retain the milestone 0.4 behavior: each slider is paired with an editable numeric field. Values can be changed by dragging, typing and pressing Enter, or leaving the field. Dot/comma decimal separators are accepted and values are clamped to the configured range.
 
-## Editable sliders
+## Performance architecture
 
-Every numeric slider in 0.4 has a synchronized editable numeric field.
-
-- moving the slider updates the text field,
-- pressing Enter in the text field updates the slider,
-- leaving the text field commits the value,
-- `.` and `,` decimal separators are accepted,
-- out-of-range input is clamped to the slider range,
-- integer controls such as particle count and vector-grid resolution are rounded,
-- invalid/non-finite values are rejected and the current valid value is restored.
-
-The parsing/clamping logic lives in the pure `NumericValueCodec`, while `NumericSliderField` is the ScalaFX adapter.
-
-## Flow parameter model
-
-`SimulationParameters` is now composed from smaller immutable groups:
+Milestone 0.4 revealed geometry as the dominant cost, especially for ovoid and twisted-ovoid cases. 0.5 therefore changes the per-particle pipeline to:
 
 ```text
-SimulationParameters
-├── AxialFlowParameters
-├── SwirlParameters
-├── SecondaryFlowParameters
-└── WallParameters
+Particle
+  -> GeometryContextCalculator
+  -> ParticleGeometryContext
+       - localPosition
+       - LocalFrame
+       - signedBoundaryDistance
+       - inwardNormal
+       - twistAngle
+       - twistRate
+  -> ParticleFlowContext
+  -> CompositeFlowForce
+  -> Integrator
+  -> BoundaryHandler
 ```
 
-This avoids a large flat parameter record and makes additional flow profiles easier to add later.
+`AxialFlowForce`, `SwirlForce`, `SecondaryFlowForce` and `WallRepulsionForce` reuse the same local geometry context.
 
-### Axial flow
+## Analytic ovoid normals
 
-\[
-a_x = k_x(v_{target}-v_x)
-\]
+`OvoidCrossSection` no longer estimates its normal using finite differences. The boundary is differentiated analytically from its polar radius. This removes several repeated `signedDistance` evaluations and trigonometric calculations from near-wall particle updates.
 
-### Swirl
+`Rotation2D` additionally stores the already-calculated sine and cosine for a local twist angle.
 
-For the default solid-body profile:
+## Flow diagnostics
 
-\[
-v_\theta = \omega r
-\]
+Cross-section mode now supports the following heat-map fields:
 
-`SwirlForce` drives the current tangential velocity toward that target.
+- Velocity magnitude
+- Axial velocity
+- Tangential velocity
+- Secondary/cross-sectional velocity
+- Vorticity estimate
 
-### Geometry-induced secondary flow
-
-The secondary model works in the local `(u,v)` cross-section frame. Its strength is multiplied by a dimensionless twist factor derived from:
-
-\[
-\tau(x) = \frac{d\theta}{dx}
-\]
-
-For the current `TwistedPipe`:
-
-\[
-\theta(x)=2\pi N\frac{x}{L}, \qquad
-\tau=2\pi\frac{N}{L}
-\]
-
-The model field is attenuated close to the real cross-section boundary, providing a simple no-slip-like fade:
-
-\[
-f(d)=\operatorname{clamp}\left(\frac{d}{d_{fade}},0,1\right)
-\]
-
-The resulting local velocity vector is transformed to world space by `LocalFrame`.
-
-## Secondary vector-field view
-
-In **Cross section** view, enable `Show secondary vector field` to display sampled local flow vectors. The `Vector grid` control changes sampling resolution.
-
-The layers are therefore:
+The diagnostic pipeline is:
 
 ```text
-actual cross-section boundary
-        +
-secondary-flow vector field
-        +
-particle positions
-        +
-fading particle trails
+SimulationState
+  -> CrossSectionVelocityFieldSampler
+  -> VectorFieldGrid
+  -> ScalarFieldCalculator
+  -> ScalarFieldGrid
+  -> HeatMapRenderer
 ```
 
-This makes it possible to compare the modeled field with the resulting particle motion.
+Particle velocities are interpolated onto a regular local cross-section grid with a compact Gaussian kernel.
 
-## Fading trails
+### Vorticity
 
-Trails remain timestamped and bounded by both sample count and age:
+For the cross-section velocity grid, the axial vorticity component is estimated as:
 
-\[
-\alpha = \alpha_0\max\left(0,1-\frac{age}{T_{trail}}\right)
-\]
+```text
+omega_x = d(v_z)/d(y) - d(v_y)/d(z)
+```
 
-With the default two-second lifetime, old segments disappear instead of accumulating into an unreadable mesh.
+using centered finite differences. This is a cross-sectional diagnostic estimate, not a full three-dimensional CFD vorticity solution.
 
-## Geometry
+The implementation is validated by a solid-body rotation test where the analytic expectation is approximately `2 * omega`.
 
-Available geometries:
+## Rendering layers
 
-- `Circular`
-- `Ovoid`
-- `TwistedOvoid`
+Cross-section rendering order is:
 
-`PipeGeometry` exposes local transforms, signed boundary distance, inward normal, local frame, twist angle and twist rate. Physics does not branch on concrete geometry type.
+```text
+background
+heat map
+secondary vector field (optional)
+fading trails (optional)
+particles (optional)
+pipe boundary
+legend
+```
+
+This keeps diagnostic fields readable without forcing every overlay to be enabled at the same time.
 
 ## Project structure
 
@@ -162,80 +132,43 @@ Available geometries:
 src/main/scala/io/codeswarm/schauberger/
 ├── application/
 ├── benchmark/
+├── diagnostics/
+│   ├── FieldType.scala
+│   ├── FieldRange.scala
+│   ├── VectorFieldGrid.scala
+│   ├── ScalarFieldGrid.scala
+│   ├── CrossSectionVelocityFieldSampler.scala
+│   ├── ScalarFieldCalculator.scala
+│   └── VorticityFieldCalculator.scala
 ├── geometry/
+│   ├── Rotation2D.scala
+│   ├── LocalFrame.scala
+│   ├── OvoidGeometryMath.scala
+│   └── ...
 ├── math/
 ├── model/
-│   ├── SimulationParameters.scala
-│   ├── AxialFlowParameters.scala
-│   ├── SwirlParameters.scala
-│   ├── SecondaryFlowParameters.scala
-│   ├── WallParameters.scala
-│   ├── GeometryParameters.scala
-│   └── VisualizationParameters.scala
 ├── physics/
-│   ├── AxialFlowForce.scala
-│   ├── SwirlForce.scala
-│   ├── SecondaryFlowForce.scala
-│   ├── WallRepulsionForce.scala
-│   └── secondary/
-│       ├── SecondaryFlowModel.scala
-│       ├── NoSecondaryFlow.scala
-│       ├── TwinVortexSecondaryFlow.scala
-│       ├── BoundaryAttenuation.scala
-│       └── LinearBoundaryAttenuation.scala
 ├── simulation/
-│   ├── SimulationEngine.scala
-│   ├── VelocityDecomposer.scala
-│   ├── SecondaryFlowFieldSampler.scala
-│   └── FlowMetricsCalculator.scala
+│   ├── ParticleGeometryContext.scala
+│   ├── GeometryContextCalculator.scala
+│   ├── ParticleFlowContext.scala
+│   └── ...
 ├── ui/
-│   ├── ControlPanel.scala
-│   ├── FlowControlPane.scala
-│   ├── GeometryControlPane.scala
-│   ├── VisualizationControlPane.scala
+│   ├── DiagnosticsControlPane.scala
 │   ├── NumericSliderField.scala
-│   └── NumericValueCodec.scala
+│   └── ...
 └── visualization/
-    ├── VectorFieldRenderer.scala
-    ├── TrailRenderer.scala
-    ├── ParticleRenderer.scala
-    └── PipeRenderer.scala
+    ├── HeatMapRenderer.scala
+    └── ...
 ```
-
-## Architecture rule
-
-```text
-ScalaFX UI
-    ↓
-SimulationController
-    ↓
-SimulationEngine ────────────── PipeGeometry
-    ↓                              ↓
-CompositeFlowForce             LocalFrame
-    ↓                              ↓
-Axial / Swirl / Secondary / Wall  CrossSectionShape
-    ↓
-math + immutable model
-```
-
-`SimulationEngine`, `FlowForce` and geometry code have no dependency on ScalaFX.
 
 ## Build and run
 
-Requirements:
-
-- JDK 21
-- Gradle
+Requirements: JDK 21 and Gradle 8.x.
 
 ```bash
 gradle clean test
 gradle run
-```
-
-or:
-
-```bash
-./scripts/run.sh
 ```
 
 ## Benchmark
@@ -244,52 +177,52 @@ or:
 gradle benchmark
 ```
 
-Particle scenarios:
+The 0.5 benchmark adds:
 
-- `circular-axial`
-- `circular-swirl`
-- `ovoid-swirl`
-- `twisted-ovoid-swirl`
-- `twisted-ovoid-swirl-secondary`
+- 5 warm-up iterations,
+- 10 measurement iterations,
+- median and p95 timings,
+- particle updates/s,
+- field-sampling measurements,
+- a geometry-context microbenchmark for circular, ovoid and twisted-ovoid geometries.
 
-Population sizes: 1,000 / 10,000 / 50,000 particles.
-
-Secondary-field sampling is additionally measured at 15x15, 30x30 and 60x60 grid resolutions.
-
-Results are written to:
+Output:
 
 ```text
-benchmark/results/benchmark-0.4.0.json
+benchmark/results/benchmark-0.5.0.json
 ```
 
-The benchmark is intended for regression tracking, not as a replacement for JMH.
+The benchmark is designed for regression tracking. Use JMH for publication-grade microbenchmarks.
+
+## GitHub Actions
+
+Two workflows are included:
+
+- `.github/workflows/ci.yml` — checkout, JDK 21, Gradle 8.10.2, `clean test` on push/PR/manual runs.
+- `.github/workflows/benchmark.yml` — manual benchmark run, tests first, then uploads `benchmark-0.5.0.json` as a workflow artifact.
 
 ## Tests
 
-The suite covers:
+The suite covers the existing 0.1–0.4 behavior and new 0.5 functionality, including:
 
-- vector mathematics,
-- circular and ovoid cross-sections,
-- local/world transforms,
-- twist rate,
-- axial/swirl/wall forces,
-- secondary-flow attenuation and symmetry,
-- finite secondary-field samples,
-- long-running containment invariants,
-- enabled-vs-disabled secondary-flow trajectory differences,
+- precomputed geometry contexts,
+- analytic ovoid normals,
+- local/world frame round trips,
+- force models using `ParticleFlowContext`,
+- vorticity validation against solid-body rotation,
+- scalar range normalization,
+- long-running geometry containment,
+- secondary flow,
 - fading trails,
-- parameter defaults,
-- numeric text parsing/clamping for editable sliders.
+- editable numeric input parsing/clamping.
 
-## Roadmap
+## Documentation
 
-- **0.1** axial particle-flow foundation
-- **0.2** 3D swirl and helical trajectories
-- **0.3** circular / ovoid / twisted-ovoid geometry
-- **0.4** geometry-induced secondary flow + vector field + editable slider values
-- **0.5** velocity/vorticity heat maps and field diagnostics
-- **0.6** multiple vortex profiles
-- **0.7** double / counter-rotating vortex experiments
-- **0.8** pressure and energy proxies
-- **0.9** comparison/experiment workspace
-- **1.0** complete Schauberger-inspired flow laboratory
+- `README.md` — user/developer overview
+- `docs/ARCHITECTURE.md` — architecture and dependency boundaries
+- `docs/IMPLEMENTATION_TASKS.md` — detailed implementation sequence and acceptance criteria
+- `CHANGELOG.md` — milestone history
+
+## License
+
+Licensed under the **Apache License, Version 2.0**. See `LICENSE`.

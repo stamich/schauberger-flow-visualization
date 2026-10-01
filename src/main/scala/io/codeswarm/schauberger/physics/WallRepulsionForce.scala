@@ -1,18 +1,18 @@
 package io.codeswarm.schauberger.physics
 
 import io.codeswarm.schauberger.math.Vector3D
-import io.codeswarm.schauberger.model.Particle
+import io.codeswarm.schauberger.simulation.ParticleFlowContext
 
-/** Geometry-independent soft wall force based on signed boundary distance and inward normal. */
+/** Geometry-independent soft wall force using precomputed boundary data. */
 final class WallRepulsionForce extends FlowForce {
   /** Computes an inward acceleration near the current geometry boundary. */
-  override def acceleration(particle: Particle, context: FlowContext): Vector3D = {
-    val threshold = context.parameters.wall.threshold
-    val distance = context.geometry.signedDistanceToBoundary(particle.position)
+  override def acceleration(context: ParticleFlowContext): Vector3D = {
+    val threshold = context.flow.parameters.wall.threshold
+    val distance = context.geometry.signedBoundaryDistance
     if (threshold <= 0.0 || distance >= threshold) Vector3D.Zero
     else {
       val penetration = math.max(0.0, threshold - distance)
-      context.geometry.inwardNormal(particle.position) * (context.parameters.wall.strength * penetration / threshold)
+      context.geometry.inwardNormal * (context.flow.parameters.wall.strength * penetration / threshold)
     }
   }
 }

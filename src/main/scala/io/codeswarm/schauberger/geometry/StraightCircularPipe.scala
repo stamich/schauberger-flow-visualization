@@ -2,11 +2,7 @@ package io.codeswarm.schauberger.geometry
 
 import io.codeswarm.schauberger.math.{Vector2D, Vector3D}
 
-/** Backward-friendly convenience geometry for the circular baseline.
-  *
-  * @param length pipe length along the global x axis
-  * @param radius circular cross-section radius
-  */
+/** Convenience baseline geometry for a straight circular pipe. */
 final case class StraightCircularPipe(length: Double, radius: Double) extends PipeGeometry {
   require(length > 0.0 && radius > 0.0)
 
@@ -19,8 +15,13 @@ final case class StraightCircularPipe(length: Double, radius: Double) extends Pi
   override def fromLocalCrossSection(x: Double, local: Vector2D): Vector3D = Vector3D(x, local.x, local.y)
 
   /** Returns the constant untwisted world frame. */
-  override def localFrameAt(position: Vector3D): LocalFrame =
-    LocalFrame(Vector3D.UnitX, Vector3D.UnitY, Vector3D.UnitZ, 0.0)
+  override def localFrameAt(position: Vector3D): LocalFrame = LocalFrame(
+    origin = centerLinePosition(position.x),
+    tangent = Vector3D.UnitX,
+    normal = Vector3D.UnitY,
+    binormal = Vector3D.UnitZ,
+    rotation = Rotation2D.Identity
+  )
 
   /** Returns zero twist rate. */
   override def twistRate: Double = 0.0

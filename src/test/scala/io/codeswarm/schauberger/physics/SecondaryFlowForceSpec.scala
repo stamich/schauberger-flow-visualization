@@ -16,15 +16,16 @@ class SecondaryFlowForceSpec extends AnyFunSuite {
   private val force = new SecondaryFlowForce(new TwinVortexSecondaryFlow)
 
   test("enabled secondary model contributes cross-sectional acceleration") {
-    val acceleration = force.acceleration(particle, FlowContext(geometry, SimulationParameters.Default))
+    val context = PhysicsTestSupport.context(particle, geometry, SimulationParameters.Default)
+    val acceleration = force.acceleration(context)
     assert(acceleration.magnitude > 0.0)
-    assert(math.abs(acceleration.dot(geometry.tangentAt(position))) < 1e-8)
+    assert(math.abs(acceleration.dot(context.geometry.frame.tangent)) < 1e-8)
   }
 
   test("disabled secondary flow contributes zero acceleration") {
     val base = SimulationParameters.Default
     val parameters = base.copy(secondaryFlow = base.secondaryFlow.copy(enabled = false))
-    val acceleration = force.acceleration(particle, FlowContext(geometry, parameters))
+    val acceleration = force.acceleration(PhysicsTestSupport.context(particle, geometry, parameters))
     assert(acceleration == Vector3D.Zero)
   }
 }

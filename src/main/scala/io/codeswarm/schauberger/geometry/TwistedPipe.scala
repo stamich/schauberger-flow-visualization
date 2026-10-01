@@ -2,12 +2,7 @@ package io.codeswarm.schauberger.geometry
 
 import io.codeswarm.schauberger.math.{Vector2D, Vector3D}
 
-/** Straight-centerline pipe whose cross-section rotates continuously along x.
-  *
-  * @param length pipe length along x
-  * @param crossSection local shape before axial rotation
-  * @param twistTurns number of complete 2π cross-section turns over the pipe length
-  */
+/** Straight-centerline pipe whose cross-section rotates continuously along x. */
 final case class TwistedPipe(length: Double, crossSection: CrossSectionShape, twistTurns: Double) extends PipeGeometry {
   require(length > 0.0 && twistTurns >= 0.0)
 
@@ -18,26 +13,27 @@ final case class TwistedPipe(length: Double, crossSection: CrossSectionShape, tw
   /** Returns constant cross-section twist rate in radians per axial unit. */
   override def twistRate: Double = 2.0 * math.Pi * twistTurns / length
 
-  /** Removes the local cross-section rotation from world y-z coordinates. */
-  override def toLocalCrossSection(position: Vector3D): Vector2D =
-    Vector2D(position.y, position.z).rotate(-rotationAngleAt(position.x))
-
-  /** Applies the local cross-section rotation and embeds local coordinates in world space. */
-  override def fromLocalCrossSection(x: Double, local: Vector2D): Vector3D = {
-    val world = local.rotate(rotationAngleAt(x))
-    Vector3D(x, world.x, world.y)
+  /** Removes local cross-section rotation from world y-z coordinates. */
+  override def toLocalCrossSection(position: Vector3D): Vector2D = {
+    val rotation = Rotation2D.fromAngle(rotationAngleAt(position.x))
+    rotation.inverse(Vector2D(position.y, position.z))
   }
 
-  /** Returns tangent plus rotated local normal/binormal basis vectors. */
+  /** Applies local cross-section rotation and embeds local coordinates in world space. */
+  override def fromLocalCrossSection(x: Double, local: Vector2D): Vector3D = {
+    val rotated = Rotation2D.fromAngle(rotationAngleAt(x))(local)
+    Vector3D(x, rotated.x, rotated.y)
+  }
+
+  /** Returns a cached local frame for the supplied axial position. */
   override def localFrameAt(position: Vector3D): LocalFrame = {
-    val theta = rotationAngleAt(position.x)
-    val cosine = math.cos(theta)
-    val sine = math.sin(theta)
+    val rotation = Rotation2D.fromAngle(rotationAngleAt(position.x))
     LocalFrame(
+      origin = centerLinePosition(position.x),
       tangent = Vector3D.UnitX,
-      normal = Vector3D(0.0, cosine, sine),
-      binormal = Vector3D(0.0, -sine, cosine),
-      rotationAngle = theta
+      normal = Vector3D(0.0, rotation.cosine, rotation.sine),
+      binormal = Vector3D(0.0, -rotation.sine, rotation.cosine),
+      rotation = rotation
     )
   }
 }

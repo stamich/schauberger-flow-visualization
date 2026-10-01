@@ -1,21 +1,17 @@
 package io.codeswarm.schauberger.simulation
 
-import io.codeswarm.schauberger.geometry.PipeGeometry
-import io.codeswarm.schauberger.math.{Vector2D, Vector3D}
+import io.codeswarm.schauberger.math.Vector3D
 import io.codeswarm.schauberger.model.Particle
 
-/** Decomposes world-space particle velocity into local axial/cross-sectional components. */
+/** Decomposes world-space velocity using a precomputed local geometry frame. */
 final class VelocityDecomposer {
   /** Calculates axial, tangential, radial and local cross-section components. */
-  def decompose(particle: Particle, geometry: PipeGeometry): VelocityComponents = {
-    val frame = geometry.localFrameAt(particle.position)
-    val tangent = frame.tangent.normalized
-    val center = geometry.centerLinePosition(particle.position.x)
-    val raw = particle.position - center
-    val radialVector = raw - tangent * raw.dot(tangent)
+  def decompose(particle: Particle, geometry: ParticleGeometryContext): VelocityComponents = {
+    val tangent = geometry.frame.tangent.normalized
+    val radialVector = geometry.frame.crossSectionVectorToWorld(geometry.localPosition)
     val radius = radialVector.magnitude
     val axial = particle.velocity.dot(tangent)
-    val cross = frame.worldVectorToCrossSection(particle.velocity)
+    val cross = geometry.frame.worldVectorToCrossSection(particle.velocity)
     if (radius <= Vector3D.Epsilon) VelocityComponents(axial, 0.0, 0.0, cross)
     else {
       val radialUnit = radialVector.normalized
