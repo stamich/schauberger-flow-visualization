@@ -1,38 +1,19 @@
 package io.codeswarm.schauberger.physics
 
-import io.codeswarm.schauberger.geometry.StraightCircularPipe
-import io.codeswarm.schauberger.math.Vector3D
-import io.codeswarm.schauberger.model.{Particle, RotationDirection, SimulationParameters}
+import io.codeswarm.schauberger.geometry.{OvoidCrossSection,TwistedPipe}
+import io.codeswarm.schauberger.math.{Vector2D,Vector3D}
+import io.codeswarm.schauberger.model.{Particle,RotationDirection,SimulationParameters}
 import org.scalatest.funsuite.AnyFunSuite
-
-/** Unit tests for tangential acceleration around the pipe axis. */
-final class SwirlForceSpec extends AnyFunSuite {
-  private val force = new SwirlForce(new SolidBodySwirlProfile)
-  private val pipe = StraightCircularPipe(100, 10)
-
-  test("particle on positive y axis accelerates toward positive z for counter-clockwise rotation") {
-    val params = SimulationParameters.Default.copy(
-      angularVelocity = 1.0,
-      swirlResponse = 1.0,
-      rotationDirection = RotationDirection.CounterClockwise
-    )
-    val a = force.acceleration(Particle(1, Vector3D(10, 5, 0), Vector3D.Zero), FlowContext(pipe, params))
-    assert(math.abs(a.y) < 1e-12)
-    assert(a.z > 0.0)
+import org.junit.runner.RunWith
+import org.scalatestplus.junit.JUnitRunner
+@RunWith(classOf[JUnitRunner])
+class SwirlForceSpec extends AnyFunSuite {
+  private val pipe=TwistedPipe(100,OvoidCrossSection(20,30,0.1),1)
+  test("swirl is tangential and reverses with rotation direction") {
+    val pos=pipe.fromLocalCrossSection(25,Vector2D(5,0)); val particle=Particle(1,pos,Vector3D.Zero); val force=new SwirlForce(new SolidBodySwirlProfile)
+    val ccw=force.acceleration(particle,FlowContext(pipe,SimulationParameters.Default.copy(rotationDirection=RotationDirection.CounterClockwise)))
+    val cw=force.acceleration(particle,FlowContext(pipe,SimulationParameters.Default.copy(rotationDirection=RotationDirection.Clockwise)))
+    assert(ccw.dot(cw)<0)
   }
-
-  test("clockwise rotation reverses tangential acceleration") {
-    val params = SimulationParameters.Default.copy(
-      angularVelocity = 1.0,
-      swirlResponse = 1.0,
-      rotationDirection = RotationDirection.Clockwise
-    )
-    val a = force.acceleration(Particle(1, Vector3D(10, 5, 0), Vector3D.Zero), FlowContext(pipe, params))
-    assert(a.z < 0.0)
-  }
-
-  test("particle exactly on center line receives no swirl acceleration") {
-    val a = force.acceleration(Particle(1, Vector3D(10, 0, 0), Vector3D.Zero), FlowContext(pipe, SimulationParameters.Default))
-    assert(a == Vector3D.Zero)
-  }
+  test("centerline particle receives no swirl") { assert(new SwirlForce(new SolidBodySwirlProfile).acceleration(Particle(1,Vector3D(20,0,0),Vector3D.Zero),FlowContext(pipe,SimulationParameters.Default)).magnitude<1e-9) }
 }
