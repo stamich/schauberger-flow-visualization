@@ -2,23 +2,26 @@ package io.codeswarm.schauberger.application
 
 import io.codeswarm.schauberger.geometry.GeometryFactory
 import io.codeswarm.schauberger.model.{GeometryParameters, SimulationParameters, VisualizationParameters}
-import io.codeswarm.schauberger.physics.{AxialFlowForce, CompositeFlowForce, SolidBodySwirlProfile, SwirlForce, WallRepulsionForce}
-import io.codeswarm.schauberger.simulation.{FlowMetricsCalculator, PipeBoundaryHandler, SemiImplicitEulerIntegrator, SimulationEngine, UniformCrossSectionParticleGenerator}
+import io.codeswarm.schauberger.physics.{AxialFlowForce, CompositeFlowForce, SecondaryFlowForce, SolidBodySwirlProfile, SwirlForce, WallRepulsionForce}
+import io.codeswarm.schauberger.physics.secondary.TwinVortexSecondaryFlow
+import io.codeswarm.schauberger.simulation.{FlowMetricsCalculator, PipeBoundaryHandler, SecondaryFlowFieldSampler, SemiImplicitEulerIntegrator, SimulationEngine, UniformCrossSectionParticleGenerator}
 import io.codeswarm.schauberger.ui.{SimulationController, SimulationView}
-import io.codeswarm.schauberger.visualization.{ParticleRenderer, PipeRenderer, SimulationRenderer, TrailBuffer, TrailRenderer}
+import io.codeswarm.schauberger.visualization.{ParticleRenderer, PipeRenderer, SimulationRenderer, TrailBuffer, TrailRenderer, VectorFieldRenderer}
 import scalafx.application.JFXApp3
 import scalafx.scene.Scene
 import scalafx.scene.canvas.Canvas
 
-/** ScalaFX entry point wiring milestone 0.3 domain components to the UI. */
+/** ScalaFX entry point wiring milestone 0.4 domain components to the UI. */
 object SchaubergerFlowApplication extends JFXApp3 {
 
   /** Constructs the application graph, shows the primary stage and starts animation. */
   override def start(): Unit = {
+    val secondaryModel = new TwinVortexSecondaryFlow
     val engine = new SimulationEngine(
       forceModel = CompositeFlowForce(Vector(
         new AxialFlowForce,
         new SwirlForce(new SolidBodySwirlProfile),
+        new SecondaryFlowForce(secondaryModel),
         new WallRepulsionForce
       )),
       integrator = new SemiImplicitEulerIntegrator,
@@ -32,13 +35,14 @@ object SchaubergerFlowApplication extends JFXApp3 {
       pipeRenderer = new PipeRenderer,
       particleRenderer = new ParticleRenderer,
       trailRenderer = new TrailRenderer,
-      trailBuffer = new TrailBuffer
+      trailBuffer = new TrailBuffer,
+      vectorFieldRenderer = new VectorFieldRenderer(new SecondaryFlowFieldSampler(secondaryModel))
     )
     val controller = new SimulationController(
       engine = engine,
       geometryFactory = new GeometryFactory,
       renderer = renderer,
-      metricsCalculator = new FlowMetricsCalculator,
+      metricsCalculator = new FlowMetricsCalculator(secondaryModel),
       initialSimulation = SimulationParameters.Default,
       initialGeometry = GeometryParameters.Default,
       initialVisualization = VisualizationParameters.Default
@@ -46,8 +50,8 @@ object SchaubergerFlowApplication extends JFXApp3 {
     val view = new SimulationView(canvas, controller)
 
     stage = new JFXApp3.PrimaryStage {
-      title = "Schauberger Flow Visualization 0.3"
-      scene = new Scene(1380.0, 1020.0) {
+      title = "Schauberger Flow Visualization 0.4"
+      scene = new Scene(1480.0, 1080.0) {
         root = view
       }
     }
