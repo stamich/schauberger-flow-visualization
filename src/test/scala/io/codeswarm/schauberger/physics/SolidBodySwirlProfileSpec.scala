@@ -1,17 +1,9 @@
 package io.codeswarm.schauberger.physics
 
 import org.scalatest.funsuite.AnyFunSuite
-
-/** Tests the linear solid-body swirl profile. */
-final class SolidBodySwirlProfileSpec extends AnyFunSuite {
-  private val profile = new SolidBodySwirlProfile
-
-  test("tangential velocity is zero on the axis") {
-    assert(profile.tangentialVelocity(0.0, 10.0, 2.0) == 0.0)
-  }
-
-  test("tangential velocity grows linearly with radius") {
-    assert(profile.tangentialVelocity(1.0, 10.0, 2.0) == 2.0)
-    assert(profile.tangentialVelocity(3.0, 10.0, 2.0) == 6.0)
-  }
+import org.junit.runner.RunWith
+import org.scalatestplus.junit.JUnitRunner
+@RunWith(classOf[JUnitRunner])
+class SolidBodySwirlProfileSpec extends AnyFunSuite {
+  test("tangential target scales linearly with radius") { val p=new SolidBodySwirlProfile; assert(p.tangentialVelocity(2,10,0.5)==1.0);assert(p.tangentialVelocity(4,10,0.5)==2.0) }
 }

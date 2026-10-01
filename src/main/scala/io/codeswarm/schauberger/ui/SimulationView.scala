@@ -6,30 +6,32 @@ import scalafx.scene.canvas.Canvas
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{BorderPane, HBox}
 
-/** Main ScalaFX view containing simulation Canvas, status metrics and controls. */
+/** Main ScalaFX composition containing status, Canvas and milestone 0.3 controls. */
 final class SimulationView(
     canvas: Canvas,
     controller: SimulationController
 ) extends BorderPane {
   private val fpsLabel = new Label("FPS: --")
   private val stateLabel = new Label("Running")
+  private val geometryLabel = new Label("Geometry: --")
   private val axialLabel = new Label("Axial: --")
   private val tangentialLabel = new Label("Tangential: --")
-  private val angularLabel = new Label("Angular: --")
-  private val vorticityLabel = new Label("Vorticity proxy: --")
-  private var lastTimestamp: Long = 0L
+  private val radialLabel = new Label("Mean radial: --")
+  private val twistLabel = new Label("Twist: --")
+  private var lastTimestamp = 0L
 
   private val status = new HBox {
-    spacing = 16.0
+    spacing = 14.0
     padding = Insets(8.0, 14.0, 8.0, 14.0)
     children = Seq(
-      new Label("Schauberger Flow Visualization 0.2"),
+      new Label("Schauberger Flow Visualization 0.3"),
       fpsLabel,
       stateLabel,
+      geometryLabel,
       axialLabel,
       tangentialLabel,
-      angularLabel,
-      vorticityLabel
+      radialLabel,
+      twistLabel
     )
   }
 
@@ -40,7 +42,7 @@ final class SimulationView(
   center = canvas
   bottom = controls
 
-  /** Animation timer converting render timestamps to fixed-timestep simulation updates. */
+  /** Animation timer converting render timestamps into fixed-step simulation updates. */
   val timer: AnimationTimer = AnimationTimer { now =>
     if (lastTimestamp == 0L) {
       lastTimestamp = now
@@ -53,14 +55,15 @@ final class SimulationView(
     }
   }
 
-  /** Refreshes FPS, running state and aggregate flow metrics. */
+  /** Refreshes display-only status and aggregate flow metrics. */
   private def refreshStatus(): Unit = {
     val metrics = controller.metrics
     fpsLabel.text = if (controller.fps > 0.0) f"FPS: ${controller.fps}%.1f" else "FPS: --"
     stateLabel.text = if (controller.isRunning) "Running" else "Paused"
+    geometryLabel.text = s"Geometry: ${controller.geometryParameters.geometryType}"
     axialLabel.text = f"Axial: ${metrics.meanAxialVelocity}%.1f"
     tangentialLabel.text = f"Tangential: ${metrics.meanTangentialVelocity}%.1f"
-    angularLabel.text = f"Angular: ${metrics.meanAngularVelocity}%.3f"
-    vorticityLabel.text = f"Vorticity proxy: ${metrics.vorticityProxy}%.3f"
+    radialLabel.text = f"Mean radial: ${metrics.meanNormalizedRadialPosition}%.2f"
+    twistLabel.text = f"Twist rate: ${controller.geometry.twistRate}%.4f"
   }
 }

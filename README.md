@@ -1,128 +1,159 @@
 # Schauberger Flow Visualization
 
-`0.2.0` is an educational Scala/ScalaFX particle visualization of helical flow concepts inspired by Viktor Schauberger's observations of vortex-like water motion. The project is deliberately explicit about the boundary between **modern vector/flow modelling** and broader historical claims that are not established by contemporary fluid mechanics.
+Scala/ScalaFX particle visualization of helical and geometry-driven flow concepts inspired by Viktor Schauberger's observations of water vortices.
 
-## Milestone 0.2 goal
+> This project is an educational and experimental visualization. It does **not** claim to validate Schauberger's broader physical theories and it is not a Navier-Stokes CFD solver.
 
-Milestone 0.1 established a clean particle engine with axial flow. Milestone 0.2 adds the first visually characteristic behavior:
+## Milestone 0.3.0-buildfix1
+
+> **Buildfix1:** fixes a ScalaFX compile-time name collision in `ControlPanel`: slider fields formerly named `width` and `height` conflicted with inherited `VBox.width` / `VBox.height` properties. They are now named `widthSlider` and `heightSlider`.
+
+Milestone 0.3 generalizes the pipe from a circular cylinder to geometry-driven flow. The same simulation engine now supports:
+
+- circular cross-sections,
+- asymmetric ovoid cross-sections,
+- ovoid cross-sections rotating continuously along the pipe axis,
+- geometry-aware wall repulsion and hard boundary handling,
+- local-frame swirl,
+- longitudinal and physical cross-section views,
+- short, fading particle trails,
+- geometry performance benchmarks with JSON output.
+
+### New readable defaults
+
+The default population has been reduced from **1500 to 750 particles**. The initial flow was retuned at the same time:
+
+| Parameter | 0.2 default | 0.3 default |
+|---|---:|---:|
+| Particles | 1500 | **750** |
+| Axial velocity | 120.0 | **90.0** |
+| Angular velocity | 0.90 | **0.55** |
+| Swirl response | 3.0 | **2.0** |
+| Trail length | 60 | **48 samples** |
+| Trail lifetime | unlimited except sample cap | **2.0 s** |
+| Trail sampling | every physics frame | **every 4 frames** |
+
+These values intentionally favor visual clarity over density.
+
+## Fading trails
+
+Milestone 0.2 kept a bounded number of points, but hundreds of particles still produced a dense mesh after a few seconds. 0.3 stores timestamped `TrailSample` values and applies two independent limits:
+
+1. `trailLength` caps samples per particle.
+2. `trailDurationSeconds` expires old samples by simulation age.
+
+Opacity decreases linearly with sample age:
+
+\[
+\alpha = \alpha_0 \max\left(0, 1 - \frac{age}{T_{trail}}\right)
+\]
+
+With defaults of 48 points, 2 seconds, and sampling every 4 physics frames, trails remain long enough to reveal a helix but do not accumulate indefinitely.
+
+## Geometry model
+
+### Circular
+
+The baseline circular cross-section remains available for comparison.
+
+### Ovoid
+
+`OvoidCrossSection` starts from an ellipse and modulates the polar boundary radius:
+
+\[
+R(\phi) = R_{ellipse}(\phi)\left(1 + a\sin\phi\right)
+\]
+
+where `a` is the asymmetry parameter.
+
+### Twisted ovoid
+
+`TwistedPipe` rotates the local cross-section around the x axis:
+
+\[
+\theta(x) = 2\pi N\frac{x}{L}
+\]
+
+where `N` is the number of turns and `L` is pipe length. Physics always works in the local frame; forces therefore contain no shape-specific branching.
+
+## Flow model
+
+Axial flow is controlled as a target velocity:
+
+\[
+a_x = k_x(v_{target} - v_x)
+\]
+
+The solid-body swirl profile remains:
+
+\[
+v_\theta = \omega r
+\]
+
+and `SwirlForce` approaches that target with a first-order response. `WallRepulsionForce` now uses `PipeGeometry.signedDistanceToBoundary` and `PipeGeometry.inwardNormal` rather than circular radius assumptions.
+
+## Cross-section view
+
+The cross-section view now represents a physical axial slice. Only particles within `crossSectionSliceHalfWidth` of the selected x position are rendered. The `Cross-section x` slider selects the slice from inlet (0%) to outlet (100%).
+
+## Project structure
 
 ```text
-axial flow + controlled tangential swirl -> helical tracer trajectories
+src/main/scala/io/codeswarm/schauberger/
+├── application/
+├── benchmark/
+├── geometry/
+│   ├── CrossSectionShape.scala
+│   ├── CircularCrossSection.scala
+│   ├── OvoidCrossSection.scala
+│   ├── LocalFrame.scala
+│   ├── PipeGeometry.scala
+│   ├── StraightPipe.scala
+│   ├── StraightCircularPipe.scala
+│   ├── TwistedPipe.scala
+│   └── GeometryFactory.scala
+├── math/
+├── model/
+│   ├── SimulationParameters.scala
+│   ├── GeometryParameters.scala
+│   └── VisualizationParameters.scala
+├── physics/
+├── simulation/
+├── ui/
+└── visualization/
 ```
 
-The simulation is still intentionally lightweight: it is **not** a Navier-Stokes CFD solver and does not calculate pressure, density or turbulence fields.
+## Architectural rule
 
-## Technology
-
-- Scala 2.13.15
-- ScalaFX / JavaFX 21
-- Gradle
-- ScalaTest 3.2.19
-- Java 21 recommended
-
-## Mathematical model
-
-The pipe axis is the x axis. Each particle has 3D position and velocity:
-
-```text
-position = (x, y, z)
-velocity = (vx, vy, vz)
-```
-
-### Axial response
-
-The axial force approaches a target velocity rather than applying constant acceleration:
-
-```text
-a_x = k_a * (v_target - v_x)
-```
-
-### Solid-body swirl
-
-Milestone 0.2 uses a `SolidBodySwirlProfile`:
-
-```text
-v_theta,target = omega * r
-```
-
-`SwirlForce` derives a local tangential direction from the pipe tangent and radial vector, then applies a first-order response:
-
-```text
-a_theta = k_s * (v_theta,target - v_theta,current)
-```
-
-This prevents unbounded angular acceleration and keeps the profile replaceable in future milestones.
-
-### Soft wall confinement
-
-Near the cylindrical wall a soft radial force points toward the center. `PipeBoundaryHandler` remains the hard numerical safety layer.
-
-### Integration
-
-Particles use semi-implicit Euler with a fixed physics timestep (default 1/120 s).
-
-## Views
-
-### Longitudinal
-
-Projects `(x, y, z)` to `(x, y)`. A 3D helix appears as an oscillating path in the side view.
-
-### Cross section
-
-Projects `(x, y, z)` to `(y, z)`, exposing the circular swirl directly.
-
-Use the View selector to switch between both without changing physical state.
-
-## Controls
-
-- Start / Pause / Reset
-- particle count (applied on Reset)
-- axial velocity
-- angular velocity
-- swirl response
-- trail length
-- clockwise / counter-clockwise rotation
-- longitudinal / cross-section view
-
-The status row displays FPS, mean axial velocity, signed mean tangential velocity, signed mean angular velocity and a **vorticity proxy**. The proxy is `2 * meanAngularVelocity`, appropriate as a diagnostic for the current solid-body model; it is not a grid-computed curl field.
-
-## Architecture
+Dependencies point toward domain abstractions:
 
 ```text
 ScalaFX UI
-   |
+   ↓
 SimulationController
-   |
-SimulationEngine
-   +-- CompositeFlowForce
-   |    +-- AxialFlowForce
-   |    +-- SwirlForce -> SwirlProfile
-   |    +-- WallRepulsionForce
-   +-- ParticleIntegrator
-   +-- BoundaryHandler
-   +-- PipeGeometry
-
-SimulationState -> Projection -> Canvas renderer
-                    |-- LongitudinalProjection
-                    `-- CrossSectionProjection
+   ↓
+SimulationEngine ───── PipeGeometry
+   ↓                     ↓
+FlowForce          CrossSectionShape
+   ↓
+math / model
 ```
 
-Physical state is immutable. `TrailBuffer` is intentionally mutable but lives exclusively in the visualization layer.
-
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for details.
+No physics class checks `Circular`, `Ovoid`, or `TwistedOvoid` with `if`/`match`.
 
 ## Build and run
 
-If Gradle is installed:
+Requirements:
+
+- JDK 21
+- Gradle
 
 ```bash
 gradle clean test
 gradle run
 ```
 
-If a Gradle wrapper is added locally, the same commands can be executed with `./gradlew`.
-
-A convenience launcher is available:
+or:
 
 ```bash
 ./scripts/run.sh
@@ -130,63 +161,36 @@ A convenience launcher is available:
 
 ## Benchmark
 
-The lightweight headless benchmark compares:
-
-- `axial-only`
-- `axial-plus-swirl`
-
-for 1,000, 10,000 and 50,000 particles.
-
 ```bash
 gradle benchmark
 ```
 
-It prints CSV-compatible output and writes:
+Scenarios:
+
+- `circular-axial`
+- `circular-swirl`
+- `ovoid-swirl`
+- `twisted-ovoid-swirl`
+
+Population sizes: 1,000 / 10,000 / 50,000 particles.
+
+Results are saved to:
 
 ```text
-benchmark/results/benchmark-0.2.0.json
+benchmark/results/benchmark-0.3.0.json
 ```
 
-This benchmark is intended for milestone regression tracking, not as a replacement for JMH.
+This is a lightweight regression benchmark, not a replacement for JMH.
 
 ## Tests
 
-Tests cover:
-
-- 3D vector algebra and cross product
-- circular 3D pipe geometry
-- axial, wall and swirl forces
-- solid-body swirl profile
-- numerical integration
-- deterministic particle generation
-- hard boundary handling
-- flow metrics
-- projections and viewport mapping
-- full engine invariants
-- emergence of cross-section motion and a changing helical angle
-
-## Current limitations
-
-- no pressure or density field
-- no Navier-Stokes solver
-- no turbulence model
-- no particle-particle hydrodynamic interaction
-- only straight circular geometry
-- only solid-body swirl profile
-- trails are a visualization history, not physical pathline integration independent of rendering cadence
+The suite covers vector mathematics, cross-section contracts, ovoid asymmetry, twist transforms, geometry factory, default settings, flow forces, arbitrary-shape particle generation, boundary invariants, metrics, projections, fading/expiring trails, and long-running engine invariants.
 
 ## Roadmap
 
-- **0.1** — axial particle engine
-- **0.2** — 3D swirl, helical trajectories, trails, cross-section view
-- **0.3** — ovoid geometry and geometry-dependent flow
-- **0.4** — twisted ovoid geometry
-- **0.5** — richer trajectory/cross-section diagnostics
-- **0.6** — field sampling, vector field and heat maps
-- **0.7** — local viscosity / particle interaction model
-- **0.8** — counter-rotating / double-vortex experiments
-- **1.0** — controlled comparison of conventional and Schauberger-inspired flow configurations
-
-## Scientific scope
-
-This software uses standard geometry, vector algebra and deliberately simplified flow rules to explore vortex-shaped tracer motion. It should not be interpreted as experimental validation of Schauberger's broader claims about implosion, energy generation or biological properties of water.
+- **0.1** axial particle-flow foundation
+- **0.2** 3D swirl and helical trajectories
+- **0.3** geometry-driven circular / ovoid / twisted-ovoid flow
+- **0.4** geometry-induced secondary flow and Dean-like vortices
+- **0.5** field sampling / heat maps and more physical diagnostics
+- later: more advanced vortex profiles and comparison with CFD reference cases
