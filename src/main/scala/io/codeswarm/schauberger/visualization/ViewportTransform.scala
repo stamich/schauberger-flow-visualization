@@ -2,34 +2,34 @@ package io.codeswarm.schauberger.visualization
 
 import io.codeswarm.schauberger.math.Vector2D
 
-/** Maps simulation/world coordinates to JavaFX Canvas coordinates.
+/** Linear transform from projected world coordinates to Canvas pixel coordinates.
   *
-  * World y coordinates are centered around zero and increase upward. Canvas y
-  * coordinates increase downward, so the transform flips the y axis.
+  * @param minX minimum projected world x
+  * @param maxX maximum projected world x
+  * @param minY minimum projected world y
+  * @param maxY maximum projected world y
+  * @param canvasWidth current canvas width in pixels
+  * @param canvasHeight current canvas height in pixels
+  * @param padding pixel margin around the drawable region
   */
 final case class ViewportTransform(
-    worldWidth: Double,
-    worldHalfHeight: Double,
+    minX: Double,
+    maxX: Double,
+    minY: Double,
+    maxY: Double,
     canvasWidth: Double,
     canvasHeight: Double,
-    horizontalPadding: Double = 24.0,
-    verticalPadding: Double = 32.0
+    padding: Double = 24.0
 ) {
-  require(worldWidth > 0.0, "worldWidth must be positive")
-  require(worldHalfHeight > 0.0, "worldHalfHeight must be positive")
+  require(maxX > minX, "maxX must be greater than minX")
+  require(maxY > minY, "maxY must be greater than minY")
 
-  private val usableWidth = math.max(1.0, canvasWidth - horizontalPadding * 2.0)
-  private val usableHeight = math.max(1.0, canvasHeight - verticalPadding * 2.0)
-  private val xScale = usableWidth / worldWidth
-  private val yScale = usableHeight / (worldHalfHeight * 2.0)
-
-  /** Maps one simulation point into Canvas coordinates. */
-  def worldToScreen(position: Vector2D): Vector2D =
-    Vector2D(
-      horizontalPadding + position.x * xScale,
-      canvasHeight / 2.0 - position.y * yScale
-    )
-
-  /** Converts a world-space vertical distance into pixels. */
-  def worldDistanceToScreen(distance: Double): Double = distance * yScale
+  /** Converts a projected world point to pixel coordinates with vertical inversion. */
+  def worldToScreen(point: Vector2D): Vector2D = {
+    val usableWidth = math.max(1.0, canvasWidth - 2.0 * padding)
+    val usableHeight = math.max(1.0, canvasHeight - 2.0 * padding)
+    val sx = padding + (point.x - minX) / (maxX - minX) * usableWidth
+    val sy = canvasHeight - padding - (point.y - minY) / (maxY - minY) * usableHeight
+    Vector2D(sx, sy)
+  }
 }
