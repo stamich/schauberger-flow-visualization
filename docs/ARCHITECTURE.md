@@ -1,161 +1,116 @@
-# Architecture — milestone 0.4
+# Architecture — milestone 0.5
 
 ## Purpose
 
-Milestone 0.4 extends the geometry-first architecture with a secondary cross-sectional flow model. Geometry now influences motion in two distinct ways:
-
-1. as a hard/soft boundary,
-2. as input to a local secondary-flow target field.
-
-The model remains intentionally lighter than CFD.
+Milestone 0.5 adds flow diagnostics while reducing repeated geometry work discovered by the 0.4 benchmark.
 
 ## Dependency direction
 
 ```text
-ScalaFX
-  ↓
-UI panes + NumericSliderField
+ScalaFX UI
   ↓
 SimulationController
   ↓
 SimulationEngine
+  ↓
+GeometryContextCalculator
+  ↓
+ParticleGeometryContext
+  ↓
+ParticleFlowContext
   ↓
 CompositeFlowForce
   ├── AxialFlowForce
   ├── SwirlForce
   ├── SecondaryFlowForce
   └── WallRepulsionForce
-        ↓
-PipeGeometry + immutable model + math
 ```
 
-Physics never imports ScalaFX.
+Physics and diagnostics do not import ScalaFX.
 
-## Parameter composition
+## Shared geometry context
 
-```text
-SimulationParameters
-├── particleCount
-├── AxialFlowParameters
-├── SwirlParameters
-├── SecondaryFlowParameters
-├── WallParameters
-├── maxVelocity
-└── fixedTimeStep
-```
+For each particle, `SimulationEngine` asks `GeometryContextCalculator` for exactly one context before force calculation. The context contains center-line location, local cross-section position, local frame, signed wall distance, inward normal and twist metadata.
 
-`GeometryParameters` and `VisualizationParameters` remain separate because geometry reconstruction and rendering configuration have different lifecycle rules from physical parameters.
+This prevents each force from independently repeating `toLocalCrossSection`, `localFrameAt`, `signedDistance` and normal calculations.
 
-## Secondary-flow model
+## Ovoid geometry optimization
 
-`SecondaryFlowModel` returns a target velocity in local cross-section coordinates:
+`OvoidGeometryMath` computes:
 
-```text
-world particle
-    ↓ PipeGeometry.toLocalCrossSection
-local (u,v)
-    ↓ SecondaryFlowModel
-target local velocity
-    ↓ LocalFrame.crossSectionVectorToWorld
-world target velocity
-    ↓ SecondaryFlowForce
-acceleration contribution
-```
+- polar radius,
+- radius derivative,
+- boundary point,
+- analytic inward normal.
 
-`SecondaryFlowForce` is responsible for first-order response toward that target. The model itself does not know about particle acceleration integration.
-
-## Current profile
-
-`TwinVortexSecondaryFlow` is a smooth stream-function-inspired educational field. It depends on:
-
-- local cross-section position,
-- local twist rate,
-- secondary strength,
-- boundary attenuation.
-
-`NoSecondaryFlow` is available for regression and explicit neutral behavior.
-
-## Boundary attenuation
-
-```text
-BoundaryAttenuation
-└── LinearBoundaryAttenuation
-```
-
-The model approaches zero near the wall using signed distance supplied by `CrossSectionShape`. This keeps the profile independent of circular/ovoid shape details.
+The previous finite-difference normal required multiple signed-distance calls. The analytic normal requires only one polar-angle evaluation plus closed-form derivative calculations.
 
 ## Local frame
 
-`LocalFrame` contains:
+`LocalFrame` owns:
 
+- origin,
 - tangent,
 - normal,
 - binormal,
-- cross-section rotation angle.
+- `Rotation2D`.
 
-It also converts vectors between local cross-section space and world space. `TwistedPipe` therefore rotates both geometry and modeled secondary velocity consistently.
+`Rotation2D` caches angle, sine and cosine, and provides forward/inverse 2D transforms.
 
-## Field sampling and rendering
+## Diagnostics pipeline
 
 ```text
-SecondaryFlowModel
-    ↓
-SecondaryFlowFieldSampler
-    ↓ Vector[FieldSample]
-VectorFieldRenderer
+SimulationState
+  ↓
+CrossSectionVelocityFieldSampler
+  ↓
+VectorFieldGrid
+  ├── ScalarFieldCalculator
+  │     ├── velocity magnitude
+  │     ├── axial velocity
+  │     ├── tangential velocity
+  │     └── secondary velocity
+  └── VorticityFieldCalculator
+        ↓
+ScalarFieldGrid
+  ↓
+HeatMapRenderer
 ```
 
-The sampler is domain-side and ScalaFX-free. `VectorFieldRenderer` is presentation-only.
-
-This separation allows the sampling cost to be benchmarked without starting JavaFX.
-
-## Velocity diagnostics
-
-`VelocityDecomposer` projects particle velocity into the local frame. `FlowMetricsCalculator` reports:
-
-- mean axial velocity,
-- mean tangential velocity,
-- mean angular velocity,
-- vorticity proxy,
-- normalized radial position,
-- mean modeled secondary velocity,
-- secondary-flow energy-ratio proxy.
-
-The last two values describe the simplified model and should not be interpreted as CFD-derived physical measurements.
+The sampler interpolates particle velocity around the selected physical axial slice. Diagnostics are render/read-only and never feed back into the physics engine.
 
 ## UI decomposition
-
-The former monolithic control panel is split into:
 
 ```text
 ControlPanel
 ├── FlowControlPane
 ├── GeometryControlPane
-└── VisualizationControlPane
+├── VisualizationControlPane
+└── DiagnosticsControlPane
 ```
 
-This reduces inheritance-name collisions with ScalaFX controls and makes each section easier to test and extend.
+Every numeric slider is implemented through `NumericSliderField`, which pairs ScalaFX `Slider` and `TextField` controls with pure validation in `NumericValueCodec`.
 
-Every numeric control uses:
+## Benchmark architecture
 
-```text
-NumericSliderField
-├── Slider
-├── TextField
-└── NumericValueCodec
-```
+The 0.5 benchmark deliberately runs outside JavaFX. It contains three groups:
 
-`NumericValueCodec` is pure logic. This allows parsing/clamping behavior to be unit tested without starting the JavaFX toolkit.
+1. particle simulation scenarios,
+2. secondary vector-field sampling,
+3. geometry-context microbenchmarks.
 
-## State and mutability
+Warm-up and repeated measurements reduce the JIT bias visible in the 0.4 results. Median and p95 values are persisted to JSON.
 
-Physical state remains immutable (`SimulationState`, `Particle`). Runtime/UI state lives in `SimulationController`. `TrailBuffer` remains intentionally mutable but visualization-only.
+## CI
 
-## Extension points for 0.5+
+Normal CI executes compilation and tests. Benchmarks are isolated in a manual workflow so performance runs do not make every pull request slow or noisy.
 
-- Eulerian velocity-grid cache,
-- velocity magnitude heat map,
-- vorticity heat map,
-- additional `SecondaryFlowModel` profiles,
-- additional `SwirlProfile` implementations,
-- quantitative field comparisons.
+## Extension points
+
+The 0.5 architecture prepares the project for:
+
+- Rankine and Lamb–Oseen swirl profiles,
+- additional vorticity/pressure diagnostics,
+- spatial indexing for larger particle populations,
+- JMH benchmarks,
+- comparison mode between multiple flow profiles.

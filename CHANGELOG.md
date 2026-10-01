@@ -2,6 +2,41 @@
 
 All notable changes to this project are documented here.
 
+## [0.5.0] - 2026-10-01
+
+### Added
+- `ParticleGeometryContext`, `GeometryContextCalculator` and `ParticleFlowContext` for shared per-particle geometry data.
+- `Rotation2D` with cached sine/cosine values.
+- `OvoidGeometryMath` with analytic polar-radius derivatives and inward normals.
+- Diagnostics package with vector/scalar grids, field types, range normalization and velocity interpolation.
+- Cross-sectional vorticity estimate and solid-body `2*omega` validation test.
+- `HeatMapRenderer` with selectable velocity/vorticity fields and legend.
+- `DiagnosticsControlPane`, heat-map controls and independent particle/trail/vector layer toggles.
+- Benchmark warm-up, repeated measurements, median and p95 statistics.
+- Geometry-context microbenchmark for circular, ovoid and twisted-ovoid geometries.
+- GitHub Actions `ci.yml` for push/PR/manual test builds.
+- Manual `benchmark.yml` workflow with benchmark JSON artifact upload.
+- Apache License 2.0 in the repository root.
+
+### Changed
+- `FlowForce` now consumes `ParticleFlowContext`.
+- `SimulationEngine` computes local geometry once per particle before force evaluation.
+- Axial, swirl, secondary and wall forces reuse cached geometry values.
+- `VelocityDecomposer` and `FlowMetricsCalculator` reuse precomputed local geometry.
+- `OvoidCrossSection.inwardNormal` no longer uses finite-difference signed-distance sampling.
+- `LocalFrame` now includes origin and `Rotation2D`.
+- Cross-section rendering can show heat maps beneath vector/particle overlays.
+- Benchmark output moved to `benchmark/results/benchmark-0.5.0.json`.
+
+### Preserved
+- 750-particle readable startup default.
+- Editable numeric input next to every slider.
+- Two-second fading particle trails.
+- Fixed-step semi-implicit Euler integration.
+- Circular, ovoid and twisted-ovoid geometry.
+- Geometry-induced secondary flow.
+- Domain/UI separation and ScalaFX Canvas rendering.
+
 ## [0.4.0-buildfix1] - 2026-10-01
 
 ### Fixed
