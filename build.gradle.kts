@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "io.codeswarm"
-version = "0.2.0"
+version = "0.3.0-buildfix1"
 
 repositories {
     mavenCentral()
@@ -42,7 +42,7 @@ tasks.test {
 
 tasks.register<JavaExec>("benchmark") {
     group = "verification"
-    description = "Runs axial-only and axial-plus-swirl headless benchmark scenarios and writes JSON results."
+    description = "Runs milestone 0.3 geometry benchmark scenarios and writes JSON results."
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("io.codeswarm.schauberger.benchmark.SimulationBenchmark")
 }
