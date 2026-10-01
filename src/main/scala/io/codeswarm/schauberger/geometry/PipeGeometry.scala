@@ -1,27 +1,32 @@
 package io.codeswarm.schauberger.geometry
 
-import io.codeswarm.schauberger.math.Vector2D
+import io.codeswarm.schauberger.math.Vector3D
 
-/** Geometry contract used by the simulation and rendering layers.
+/** Geometry contract shared by simulation, forces and visualization.
   *
-  * Milestone 0.1 uses a longitudinal 2D section of a straight cylindrical pipe.
-  * The abstraction exists so later milestones can introduce ovoid and twisted
-  * geometries without coupling them to the simulation engine.
+  * The methods are intentionally expressed in 3D even though milestone 0.2 uses a
+  * straight circular pipe. This makes later curved or twisted geometries possible
+  * without changing the simulation engine.
   */
 trait PipeGeometry {
-
-  /** Length of the simulated pipe along its primary x axis. */
+  /** Total axial length of the simulated pipe. */
   def length: Double
 
-  /** Half-height of the current longitudinal pipe section. */
+  /** Nominal cross-section radius. */
   def radius: Double
 
-  /** Returns true when a point is within the longitudinal simulation domain. */
-  def contains(position: Vector2D): Boolean
+  /** Returns true when a point lies inside both axial and radial bounds. */
+  def contains(position: Vector3D): Boolean
 
-  /** Returns the absolute distance of a point from the pipe center line. */
-  def distanceFromCenter(position: Vector2D): Double
+  /** Returns distance from the local center line in the cross-section plane. */
+  def radialDistance(position: Vector3D): Double
 
-  /** Clamps the vertical coordinate to the physical pipe walls. */
-  def clampToWalls(position: Vector2D): Vector2D
+  /** Returns the center-line point corresponding to axial coordinate x. */
+  def centerLinePosition(x: Double): Vector3D
+
+  /** Returns the normalized local tangent of the pipe center line. */
+  def tangentAt(position: Vector3D): Vector3D
+
+  /** Clamps a point to the radial wall while preserving its axial coordinate. */
+  def clampToWalls(position: Vector3D, epsilon: Double = 1e-6): Vector3D
 }

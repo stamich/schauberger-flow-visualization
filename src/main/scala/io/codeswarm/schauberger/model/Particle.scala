@@ -1,14 +1,14 @@
 package io.codeswarm.schauberger.model
 
-import io.codeswarm.schauberger.math.Vector2D
+import io.codeswarm.schauberger.math.Vector3D
 
-/** Immutable particle representing a small visual element of the modelled flow.
+/** Immutable visual tracer carried by the simulated flow.
   *
-  * The particle is deliberately not a fluid molecule and carries no pressure,
-  * density, or thermodynamic state in milestone 0.1.
+  * A particle is a tracer, not a literal water molecule. Milestone 0.2 deliberately
+  * does not attach pressure, density, temperature or mass to individual particles.
   *
-  * @param id stable identity used across outlet-to-inlet respawns
-  * @param position current position in simulation/world coordinates
-  * @param velocity current velocity in simulation units per second
+  * @param id stable identifier retained across outlet-to-inlet respawns
+  * @param position current three-dimensional world position
+  * @param velocity current three-dimensional velocity in simulation units per second
   */
-final case class Particle(id: Long, position: Vector2D, velocity: Vector2D)
+final case class Particle(id: Long, position: Vector3D, velocity: Vector3D)

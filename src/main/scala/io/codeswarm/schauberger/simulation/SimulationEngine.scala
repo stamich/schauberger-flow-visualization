@@ -6,13 +6,7 @@ import io.codeswarm.schauberger.physics.{CompositeFlowForce, FlowContext}
 
 /** Pure simulation coordinator for one fixed physics step.
   *
-  * The engine knows only domain abstractions and has no ScalaFX dependency.
-  *
-  * @param geometry pipe geometry
-  * @param forceModel combined acceleration model
-  * @param integrator numerical particle integrator
-  * @param particleGenerator initial-state generator
-  * @param boundaryHandler domain-boundary policy
+  * The engine depends only on domain abstractions and contains no ScalaFX code.
   */
 final class SimulationEngine(
     geometry: PipeGeometry,
@@ -22,7 +16,7 @@ final class SimulationEngine(
     boundaryHandler: BoundaryHandler
 ) {
 
-  /** Creates a fresh deterministic state from current parameters. */
+  /** Creates a fresh deterministic state using the supplied parameters. */
   def initialState(parameters: SimulationParameters): SimulationState =
     SimulationState(
       particles = particleGenerator.generate(parameters.particleCount, geometry, parameters),
@@ -30,23 +24,21 @@ final class SimulationEngine(
       frame = 0L
     )
 
-  /** Advances the complete simulation by `deltaTime` seconds. */
+  /** Advances all particles by one physics step and returns a new immutable state. */
   def step(
       state: SimulationState,
       parameters: SimulationParameters,
       deltaTime: Double
   ): SimulationState = {
-    require(deltaTime > 0.0, "deltaTime must be positive")
+    require(deltaTime >= 0.0, "deltaTime must be non-negative")
     val context = FlowContext(geometry, parameters)
-    val nextParticles = state.particles.map { particle =>
+    val particles = state.particles.map { particle =>
       val acceleration = forceModel.acceleration(particle, context)
-      val integrated = integrator.integrate(particle, acceleration, deltaTime)
-      val limited = integrated.copy(velocity = integrated.velocity.limit(parameters.maxVelocity))
-      boundaryHandler.handle(limited, geometry, parameters)
+      val integrated = integrator.integrate(particle, acceleration, deltaTime, parameters.maxVelocity)
+      boundaryHandler.handle(integrated, geometry, parameters, particleGenerator)
     }
-
-    state.copy(
-      particles = nextParticles,
+    SimulationState(
+      particles = particles,
       elapsedTime = state.elapsedTime + deltaTime,
       frame = state.frame + 1L
     )

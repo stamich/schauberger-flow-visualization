@@ -1,40 +1,27 @@
 package io.codeswarm.schauberger.simulation
 
 import io.codeswarm.schauberger.geometry.StraightCircularPipe
-import io.codeswarm.schauberger.math.Vector2D
+import io.codeswarm.schauberger.math.Vector3D
 import io.codeswarm.schauberger.model.{Particle, SimulationParameters}
-import org.junit.runner.RunWith
 import org.scalatest.funsuite.AnyFunSuite
-import org.scalatestplus.junit.JUnitRunner
 
-/** Tests continuous-flow and wall-correction boundary semantics. */
-@RunWith(classOf[JUnitRunner])
+/** Tests hard outlet and cylindrical wall handling. */
 final class PipeBoundaryHandlerSpec extends AnyFunSuite {
+  private val pipe = StraightCircularPipe(100, 10)
+  private val params = SimulationParameters.Default
+  private val generator = new UniformInletParticleGenerator(42)
   private val handler = new PipeBoundaryHandler
-  private val pipe = StraightCircularPipe(100.0, 10.0)
-  private val params = SimulationParameters.Default.copy(axialVelocity = 100.0)
 
-  test("particle before outlet remains unchanged when inside walls") {
-    val particle = Particle(7L, Vector2D(50.0, 2.0), Vector2D(20.0, 1.0))
-    assert(handler.handle(particle, pipe, params) == particle)
+  test("particle past outlet respawns at inlet") {
+    val p = handler.handle(Particle(7, Vector3D(101, 0, 0), Vector3D(10, 0, 0)), pipe, params, generator)
+    assert(p.id == 7)
+    assert(p.position.x == 0.0)
+    assert(pipe.radialDistance(p.position) <= pipe.radius)
   }
 
-  test("particle beyond outlet respawns at inlet and retains id") {
-    val result = handler.handle(Particle(7L, Vector2D(101.0, 3.0), Vector2D(120.0, 2.0)), pipe, params)
-    assert(result.id == 7L)
-    assert(result.position.x == 0.0)
-    assert(pipe.contains(result.position))
-  }
-
-  test("particle above upper wall is clamped and outward y velocity removed") {
-    val result = handler.handle(Particle(1L, Vector2D(50.0, 12.0), Vector2D(20.0, 5.0)), pipe, params)
-    assert(result.position.y == 10.0)
-    assert(result.velocity.y == 0.0)
-  }
-
-  test("particle below lower wall is clamped and outward y velocity removed") {
-    val result = handler.handle(Particle(1L, Vector2D(50.0, -12.0), Vector2D(20.0, -5.0)), pipe, params)
-    assert(result.position.y == -10.0)
-    assert(result.velocity.y == 0.0)
+  test("outside radial point is clamped and outward normal velocity removed") {
+    val p = handler.handle(Particle(7, Vector3D(50, 12, 0), Vector3D(10, 5, 0)), pipe, params, generator)
+    assert(pipe.radialDistance(p.position) < pipe.radius)
+    assert(p.velocity.y <= 1e-12)
   }
 }

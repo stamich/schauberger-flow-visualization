@@ -1,17 +1,14 @@
 package io.codeswarm.schauberger.physics
 
-import io.codeswarm.schauberger.math.Vector2D
+import io.codeswarm.schauberger.math.Vector3D
 import io.codeswarm.schauberger.model.Particle
 
-/** Combines multiple independent force models by summing their accelerations.
+/** Combines independent acceleration strategies through vector addition.
   *
-  * @param forces force models evaluated for every particle
+  * @param forces ordered force strategies contributing to the particle acceleration
   */
 final case class CompositeFlowForce(forces: Vector[FlowForce]) {
-
-  /** Calculates total acceleration from all configured forces. */
-  def acceleration(particle: Particle, context: FlowContext): Vector2D =
-    forces.foldLeft(Vector2D.Zero) { (total, force) =>
-      total + force.acceleration(particle, context)
-    }
+  /** Sums all force contributions for the supplied particle and context. */
+  def acceleration(particle: Particle, context: FlowContext): Vector3D =
+    forces.foldLeft(Vector3D.Zero) { (sum, force) => sum + force.acceleration(particle, context) }
 }

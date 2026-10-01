@@ -1,105 +1,137 @@
-# Architecture - Milestone 0.1
+# Architecture — milestone 0.2
 
-## Goals
+## Design goals
 
-Milestone 0.1 establishes an extensible simulation kernel for later vortex-flow experiments. The central design objective is to keep mathematical/physical code independent from ScalaFX.
+Milestone 0.2 keeps the 0.1 separation between simulation and ScalaFX while upgrading the physical coordinate model from 2D to 3D. The core rules are:
+
+1. `SimulationEngine` contains no UI dependencies.
+2. Physical state is immutable.
+3. Forces are composable strategies.
+4. Swirl behavior is split into `SwirlForce` and a replaceable `SwirlProfile`.
+5. Rendering consumes projections instead of teaching physics about screen coordinates.
+6. Mutable history is confined to the renderer (`TrailBuffer`).
 
 ## Dependency direction
 
 ```text
 application
-    |
-    v
-ui -------------> visualization
- |                      |
- v                      v
-simulation ----------> model
- |   |                   ^
- |   +---- geometry -----+
- |   +---- physics ------+
- |
- +-------- math
+   |
+   v
+ui --------------------> visualization
+   |                           |
+   v                           v
+simulation ----------------> model/math
+   |
+   +----> physics ----------> geometry/model/math
+   `----> geometry/model/math
 ```
 
-Lower-level packages never depend on `ui` or `application`.
+There is no dependency from `physics`, `simulation`, `geometry`, `model` or `math` to ScalaFX.
 
-## Core data flow
+## Simulation pipeline
 
 ```text
-SimulationParameters
-       |
-       v
-SimulationEngine.step(state, parameters, dt)
-       |
-       +--> FlowForce acceleration
-       +--> ParticleIntegrator
-       +--> speed limiting
-       +--> BoundaryHandler
-       |
-       v
-new SimulationState
-       |
-       v
-SimulationRenderer
-       |
-       v
-ScalaFX Canvas
+Particle
+   |
+   v
+FlowContext
+   |
+   v
+CompositeFlowForce
+   +-- AxialFlowForce
+   +-- SwirlForce
+   |      `-- SwirlProfile
+   |             `-- SolidBodySwirlProfile
+   `-- WallRepulsionForce
+   |
+   v
+SemiImplicitEulerIntegrator
+   |
+   v
+PipeBoundaryHandler
+   |
+   v
+new Particle
 ```
 
-## Immutability
+The complete population forms a new immutable `SimulationState` for every physics step.
 
-`Particle`, `SimulationState`, `SimulationParameters`, `Vector2D`, and geometry values are immutable case classes. The animation controller owns only the reference to the current immutable state.
+## 3D convention
 
-This gives deterministic, testable simulation functions while keeping mutation limited to the JavaFX animation lifecycle.
+- x: pipe axis / inlet-to-outlet direction
+- y: first cross-section coordinate
+- z: second cross-section coordinate
+
+For a straight pipe the center-line tangent is `(1, 0, 0)` and radial distance is `sqrt(y^2 + z^2)`.
+
+## Swirl model
+
+`SwirlForce` does not hard-code a vortex profile. `SwirlProfile` returns the target tangential speed at a radius.
+
+For 0.2:
+
+```text
+SolidBodySwirlProfile:
+    targetTangentialSpeed = angularVelocity * radius
+```
+
+The force computes:
+
+```text
+radial = position - centerLine(position.x)
+tangentialDirection = tangent cross radial
+currentTangentialSpeed = velocity dot tangentialDirection
+acceleration = tangentialDirection * swirlResponse * (target - current)
+```
+
+Rotation direction is applied as a sign to `tangentialDirection`.
+
+This makes 0.3+ profiles such as Rankine or Lamb-Oseen additive rather than invasive.
+
+## Boundary policy
+
+`WallRepulsionForce` is soft confinement. `PipeBoundaryHandler` is hard safety:
+
+- x > pipe length -> respawn at inlet
+- radial position outside wall -> clamp just inside wall
+- outward normal velocity after clamp -> removed
 
 ## Fixed timestep
 
-Rendering rate and simulation update rate are intentionally separate. The animation timer accumulates wall-clock time and executes one or more simulation updates using a constant timestep (`1/120 s` by default).
+`SimulationController` accumulates display time and advances the engine in `fixedTimeStep` increments. Rendering cadence therefore does not directly determine physics step size.
 
-Benefits:
+## Rendering
 
-- consistent simulation independent of monitor refresh rate,
-- better reproducibility,
-- protection from occasional slow render frames,
-- easier future comparison of force models.
-
-## Force model
-
-`FlowForce` is an extension point. `CompositeFlowForce` sums all force contributions.
-
-Milestone 0.1:
+3D physics is projected into 2D:
 
 ```text
-CompositeFlowForce
-  |- AxialFlowForce
-  `- WallRepulsionForce
+LongitudinalProjection: (x, y, z) -> (x, y)
+CrossSectionProjection: (x, y, z) -> (y, z)
 ```
 
-Milestone 0.2 can add `SwirlForce` without changing `SimulationEngine`.
+`ViewportTransform` then maps projected world coordinates to Canvas pixels.
 
-## Geometry model
+`TrailBuffer` stores recent positions by particle id. It is intentionally mutable because it is ephemeral rendering state, not simulation state.
 
-`PipeGeometry` defines the minimal contract required by physics and boundaries. In 0.1, `StraightCircularPipe` is rendered as a longitudinal 2D section of a cylindrical pipe.
+## Metrics
 
-Future implementations can introduce ovoid and twisted geometry while retaining the same simulation interfaces.
+`FlowMetricsCalculator` derives:
 
-## Boundary semantics
+- mean axial velocity
+- signed mean tangential velocity
+- signed mean angular velocity `v_theta / r`
+- solid-body vorticity proxy `2 * mean angular velocity`
 
-Particles crossing the outlet are respawned at the inlet with the same ID. This models continuous flow while keeping particle count constant. Positions outside the top/bottom walls are clamped and the outward velocity component is removed.
+Metrics do not feed back into physics.
 
-## Rendering model
+## Extension points for milestone 0.3
 
-A single ScalaFX `Canvas` is used instead of thousands of scene-graph nodes. This is important for scaling to tens of thousands of particles in later milestones.
+The following abstractions should remain stable:
 
-`ViewportTransform` separates world/simulation coordinates from screen pixels.
+- `SimulationEngine`
+- `ParticleIntegrator`
+- `FlowForce`
+- `SwirlProfile`
+- `Projection`
 
-## Deliberate non-goals for 0.1
-
-- Navier-Stokes solver,
-- pressure field solution,
-- real SI-unit calibration,
-- turbulence model,
-- particle-particle collisions,
-- vortex/swirl force,
-- 3D rendering,
-- claims about Schauberger's speculative physics.
+Milestone 0.3 should primarily extend `PipeGeometry` and adjust geometry-aware wall/radial calculations rather than rewrite the engine.

@@ -1,27 +1,29 @@
 package io.codeswarm.schauberger.physics
 
-import io.codeswarm.schauberger.math.Vector2D
+import io.codeswarm.schauberger.math.Vector3D
 import io.codeswarm.schauberger.model.Particle
 
-/** Applies a soft inward acceleration close to the upper and lower pipe walls.
+/** Applies a soft inward radial acceleration close to the circular pipe wall.
   *
-  * This is a deliberately simple visualization model rather than a pressure-field
-  * solution. Hard boundary correction remains the responsibility of
-  * `PipeBoundaryHandler`.
+  * This is a visualization-oriented confinement force, not a solved pressure field.
+  * Hard correction remains the responsibility of the boundary handler.
   */
 final class WallRepulsionForce extends FlowForce {
-
-  /** Calculates inward y acceleration when a particle enters the wall threshold. */
-  override def acceleration(particle: Particle, context: FlowContext): Vector2D = {
-    val radius = context.geometry.radius
+  /** Returns zero away from the wall and an inward radial acceleration near it. */
+  override def acceleration(particle: Particle, context: FlowContext): Vector3D = {
+    val center = context.geometry.centerLinePosition(particle.position.x)
+    val tangent = context.geometry.tangentAt(particle.position).normalized
+    val rawRadial = particle.position - center
+    val radial = rawRadial - tangent * rawRadial.dot(tangent)
+    val distance = radial.magnitude
+    val distanceFromWall = context.geometry.radius - distance
     val threshold = context.parameters.wallThreshold
-    val strength = context.parameters.wallStrength
-    val upperDistance = radius - particle.position.y
-    val lowerDistance = radius + particle.position.y
 
-    val upperPush = if (upperDistance < threshold) -strength * (threshold - upperDistance) / math.max(threshold, 1e-9) else 0.0
-    val lowerPush = if (lowerDistance < threshold) strength * (threshold - lowerDistance) / math.max(threshold, 1e-9) else 0.0
-
-    Vector2D(0.0, upperPush + lowerPush)
+    if (distance <= Vector3D.Epsilon || threshold <= 0.0 || distanceFromWall >= threshold) Vector3D.Zero
+    else {
+      val penetration = math.max(0.0, threshold - distanceFromWall)
+      val magnitude = context.parameters.wallStrength * penetration / threshold
+      radial.normalized * -magnitude
+    }
   }
 }

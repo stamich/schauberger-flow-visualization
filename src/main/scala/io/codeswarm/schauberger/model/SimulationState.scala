@@ -1,10 +1,10 @@
 package io.codeswarm.schauberger.model
 
-/** Immutable snapshot of the complete particle simulation.
+/** Immutable complete physical state of the simulation.
   *
-  * @param particles all particles currently present in the pipe
-  * @param elapsedTime simulated time in seconds
-  * @param frame number of physics updates already completed
+  * @param particles current tracer particles
+  * @param elapsedTime accumulated simulated seconds
+  * @param frame number of completed physics steps
   */
 final case class SimulationState(
     particles: Vector[Particle],
