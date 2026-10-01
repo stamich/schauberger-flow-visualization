@@ -6,7 +6,7 @@ import scalafx.scene.canvas.Canvas
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{BorderPane, HBox}
 
-/** Main ScalaFX composition containing status, Canvas and milestone 0.4 controls. */
+/** Main ScalaFX composition containing status, Canvas and milestone 0.5 controls. */
 final class SimulationView(
     canvas: Canvas,
     controller: SimulationController
@@ -25,7 +25,7 @@ final class SimulationView(
     spacing = 12.0
     padding = Insets(8.0, 14.0, 8.0, 14.0)
     children = Seq(
-      new Label("Schauberger Flow Visualization 0.4"),
+      new Label("Schauberger Flow Visualization 0.5"),
       fpsLabel,
       stateLabel,
       geometryLabel,

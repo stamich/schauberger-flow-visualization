@@ -4,17 +4,12 @@ import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.Button
 import scalafx.scene.layout.{HBox, VBox}
 
-/** Composite milestone 0.4 control panel built from focused sub-panes.
+/** Composite milestone 0.5 control panel built from focused sub-panes.
   *
   * Every numeric slider is paired with editable numeric input through
-  * [[NumericSliderField]]. Population changes take effect after Reset because
-  * particle count belongs to the allocated simulation state.
+  * [[NumericSliderField]].
   */
-final class ControlPanel(
-    controller: SimulationController,
-    onStatusRefresh: () => Unit
-) extends VBox {
-
+final class ControlPanel(controller: SimulationController, onStatusRefresh: () => Unit) extends VBox {
   spacing = 8.0
   padding = Insets(8.0)
 
@@ -39,7 +34,8 @@ final class ControlPanel(
     children = Seq(
       new FlowControlPane(controller, onStatusRefresh),
       new GeometryControlPane(controller, onStatusRefresh),
-      new VisualizationControlPane(controller, onStatusRefresh)
+      new VisualizationControlPane(controller, onStatusRefresh),
+      new DiagnosticsControlPane(controller, onStatusRefresh)
     )
   }
 
