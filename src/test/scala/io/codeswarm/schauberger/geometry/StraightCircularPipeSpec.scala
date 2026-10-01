@@ -1,34 +1,29 @@
 package io.codeswarm.schauberger.geometry
 
-import io.codeswarm.schauberger.math.Vector2D
-import org.junit.runner.RunWith
+import io.codeswarm.schauberger.math.Vector3D
 import org.scalatest.funsuite.AnyFunSuite
-import org.scalatestplus.junit.JUnitRunner
 
-/** Unit tests for milestone 0.1 straight pipe geometry. */
-@RunWith(classOf[JUnitRunner])
+/** Tests three-dimensional circular-pipe geometry. */
 final class StraightCircularPipeSpec extends AnyFunSuite {
-  private val pipe = StraightCircularPipe(length = 100.0, radius = 10.0)
+  private val pipe = StraightCircularPipe(100.0, 10.0)
 
-  test("contains accepts points inside all boundaries") {
-    assert(pipe.contains(Vector2D(50.0, 0.0)))
-    assert(pipe.contains(Vector2D(0.0, -10.0)))
-    assert(pipe.contains(Vector2D(100.0, 10.0)))
+  test("contains points inside axial and circular bounds") {
+    assert(pipe.contains(Vector3D(50, 6, 8)))
+    assert(!pipe.contains(Vector3D(50, 8, 8)))
+    assert(!pipe.contains(Vector3D(101, 0, 0)))
   }
 
-  test("contains rejects points outside axial or wall boundaries") {
-    assert(!pipe.contains(Vector2D(-0.1, 0.0)))
-    assert(!pipe.contains(Vector2D(100.1, 0.0)))
-    assert(!pipe.contains(Vector2D(50.0, 10.1)))
-    assert(!pipe.contains(Vector2D(50.0, -10.1)))
+  test("radial distance uses y and z coordinates") {
+    assert(math.abs(pipe.radialDistance(Vector3D(20, 6, 8)) - 10.0) < 1e-12)
   }
 
-  test("distance from center ignores vertical sign") {
-    assert(pipe.distanceFromCenter(Vector2D(20.0, -7.5)) == 7.5)
+  test("center line and tangent are aligned with x") {
+    assert(pipe.centerLinePosition(12.0) == Vector3D(12.0, 0.0, 0.0))
+    assert(pipe.tangentAt(Vector3D.Zero) == Vector3D.UnitX)
   }
 
-  test("clampToWalls preserves x and clamps y") {
-    assert(pipe.clampToWalls(Vector2D(20.0, 15.0)) == Vector2D(20.0, 10.0))
-    assert(pipe.clampToWalls(Vector2D(20.0, -15.0)) == Vector2D(20.0, -10.0))
+  test("clamp projects an outside point to the circular wall") {
+    val p = pipe.clampToWalls(Vector3D(20, 12, 0), epsilon = 0.1)
+    assert(math.abs(pipe.radialDistance(p) - 9.9) < 1e-10)
   }
 }
