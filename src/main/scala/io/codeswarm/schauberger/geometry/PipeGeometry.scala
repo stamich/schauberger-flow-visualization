@@ -1,32 +1,39 @@
 package io.codeswarm.schauberger.geometry
 
-import io.codeswarm.schauberger.math.Vector3D
+import io.codeswarm.schauberger.math.{Vector2D, Vector3D}
 
-/** Geometry contract shared by simulation, forces and visualization.
-  *
-  * The methods are intentionally expressed in 3D even though milestone 0.2 uses a
-  * straight circular pipe. This makes later curved or twisted geometries possible
-  * without changing the simulation engine.
-  */
+/** Geometry contract used by physics, generation, boundary handling and rendering. */
 trait PipeGeometry {
-  /** Total axial length of the simulated pipe. */
   def length: Double
-
-  /** Nominal cross-section radius. */
-  def radius: Double
-
-  /** Returns true when a point lies inside both axial and radial bounds. */
-  def contains(position: Vector3D): Boolean
-
-  /** Returns distance from the local center line in the cross-section plane. */
-  def radialDistance(position: Vector3D): Double
-
-  /** Returns the center-line point corresponding to axial coordinate x. */
-  def centerLinePosition(x: Double): Vector3D
-
-  /** Returns the normalized local tangent of the pipe center line. */
-  def tangentAt(position: Vector3D): Vector3D
-
-  /** Clamps a point to the radial wall while preserving its axial coordinate. */
-  def clampToWalls(position: Vector3D, epsilon: Double = 1e-6): Vector3D
+  def crossSection: CrossSectionShape
+  /** Converts world coordinates to the unrotated local cross-section coordinates. */
+  def toLocalCrossSection(position: Vector3D): Vector2D
+  /** Converts local cross-section coordinates at x back to world coordinates. */
+  def fromLocalCrossSection(x: Double, local: Vector2D): Vector3D
+  /** Local pipe frame including any cross-section twist. */
+  def localFrameAt(position: Vector3D): LocalFrame
+  /** Center-line point at axial coordinate x. */
+  def centerLinePosition(x: Double): Vector3D = Vector3D(x, 0.0, 0.0)
+  /** Local tangent used by flow forces. */
+  def tangentAt(position: Vector3D): Vector3D = localFrameAt(position).tangent
+  /** Returns true for points inside axial bounds and the local cross-section. */
+  def contains(position: Vector3D): Boolean = position.x >= 0.0 && position.x <= length && crossSection.contains(toLocalCrossSection(position))
+  /** Positive inside distance to the local boundary. */
+  def signedDistanceToBoundary(position: Vector3D): Double = crossSection.signedDistance(toLocalCrossSection(position))
+  /** Inward unit normal transformed into world coordinates. */
+  def inwardNormal(position: Vector3D): Vector3D = {
+    val local = crossSection.inwardNormal(toLocalCrossSection(position))
+    val frame = localFrameAt(position)
+    (frame.normal * local.x + frame.binormal * local.y).normalized
+  }
+  /** Projects a point just inside the local cross-section. */
+  def clampInside(position: Vector3D, epsilon: Double = 1e-6): Vector3D = fromLocalCrossSection(position.x, crossSection.clampInside(toLocalCrossSection(position), epsilon))
+  /** Scale used by swirl and rendering. */
+  def characteristicRadius: Double = crossSection.characteristicRadius
+  /** Maximum local extent. */
+  def boundingRadius: Double = crossSection.boundingRadius
+  /** Twist rate in radians per axial simulation unit. */
+  def twistRate: Double
+  /** Local cross-section rotation angle at x. */
+  def rotationAngleAt(x: Double): Double
 }
