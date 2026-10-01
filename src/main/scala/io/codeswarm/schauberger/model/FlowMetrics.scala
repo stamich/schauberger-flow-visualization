@@ -6,7 +6,12 @@ final case class FlowMetrics(
     meanTangentialVelocity: Double,
     meanAngularVelocity: Double,
     vorticityProxy: Double,
-    meanNormalizedRadialPosition: Double
+    meanNormalizedRadialPosition: Double,
+    meanSecondaryVelocity: Double,
+    secondaryFlowEnergyRatio: Double
 )
+
 /** Zero-valued metrics for empty states. */
-object FlowMetrics { val Zero: FlowMetrics = FlowMetrics(0.0, 0.0, 0.0, 0.0, 0.0) }
+object FlowMetrics {
+  val Zero: FlowMetrics = FlowMetrics(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+}
