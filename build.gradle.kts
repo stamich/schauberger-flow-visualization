@@ -5,13 +5,13 @@ plugins {
 }
 
 group = "io.codeswarm"
-version = "0.1.0"
+version = "0.2.0"
 
 repositories {
     mavenCentral()
 }
 
-val scalaVersion = "2.13.16"
+val scalaVersion = "2.13.15"
 val scalaFxVersion = "21.0.0-R32"
 val scalaTestVersion = "3.2.19"
 
@@ -42,7 +42,7 @@ tasks.test {
 
 tasks.register<JavaExec>("benchmark") {
     group = "verification"
-    description = "Runs the lightweight simulation-engine benchmark without ScalaFX rendering."
+    description = "Runs axial-only and axial-plus-swirl headless benchmark scenarios and writes JSON results."
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("io.codeswarm.schauberger.benchmark.SimulationBenchmark")
 }
