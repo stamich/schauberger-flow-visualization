@@ -1,100 +1,160 @@
 # Schauberger Flow Visualization
 
+> Buildfix: **0.4.0-buildfix1** fixes ScalaFX `TextField` construction in `NumericSliderField`.
+
 Scala/ScalaFX particle visualization of helical and geometry-driven flow concepts inspired by Viktor Schauberger's observations of water vortices.
 
 > This project is an educational and experimental visualization. It does **not** claim to validate Schauberger's broader physical theories and it is not a Navier-Stokes CFD solver.
 
-## Milestone 0.3.0-buildfix1
+## Milestone 0.4.0
 
-> **Buildfix1:** fixes a ScalaFX compile-time name collision in `ControlPanel`: slider fields formerly named `width` and `height` conflicted with inherited `VBox.width` / `VBox.height` properties. They are now named `widthSlider` and `heightSlider`.
+Milestone 0.4 adds **geometry-induced secondary flow** to the 0.3 geometry model. A twisted ovoid pipe can now influence the local cross-sectional target velocity field in addition to axial flow and swirl.
 
-Milestone 0.3 generalizes the pipe from a circular cylinder to geometry-driven flow. The same simulation engine now supports:
-
-- circular cross-sections,
-- asymmetric ovoid cross-sections,
-- ovoid cross-sections rotating continuously along the pipe axis,
-- geometry-aware wall repulsion and hard boundary handling,
-- local-frame swirl,
-- longitudinal and physical cross-section views,
-- short, fading particle trails,
-- geometry performance benchmarks with JSON output.
-
-### New readable defaults
-
-The default population has been reduced from **1500 to 750 particles**. The initial flow was retuned at the same time:
-
-| Parameter | 0.2 default | 0.3 default |
-|---|---:|---:|
-| Particles | 1500 | **750** |
-| Axial velocity | 120.0 | **90.0** |
-| Angular velocity | 0.90 | **0.55** |
-| Swirl response | 3.0 | **2.0** |
-| Trail length | 60 | **48 samples** |
-| Trail lifetime | unlimited except sample cap | **2.0 s** |
-| Trail sampling | every physics frame | **every 4 frames** |
-
-These values intentionally favor visual clarity over density.
-
-## Fading trails
-
-Milestone 0.2 kept a bounded number of points, but hundreds of particles still produced a dense mesh after a few seconds. 0.3 stores timestamped `TrailSample` values and applies two independent limits:
-
-1. `trailLength` caps samples per particle.
-2. `trailDurationSeconds` expires old samples by simulation age.
-
-Opacity decreases linearly with sample age:
+The physical acceleration model is conceptually:
 
 \[
-\alpha = \alpha_0 \max\left(0, 1 - \frac{age}{T_{trail}}\right)
+\vec a = \vec a_{axial} + \vec a_{swirl} + \vec a_{secondary} + \vec a_{wall}
 \]
 
-With defaults of 48 points, 2 seconds, and sampling every 4 physics frames, trails remain long enough to reveal a helix but do not accumulate indefinitely.
+The new secondary model is intentionally named `TwinVortexSecondaryFlow`: it is a smooth educational vector field shaped by local twist and wall distance, not a claim that the simulation reproduces a specific measured Schauberger device or a complete Dean-vortex solution.
 
-## Geometry model
+## Scala / ScalaFX baseline
 
-### Circular
+- Scala 2.13.15
+- ScalaFX 21
+- JavaFX 21
+- JDK 21
+- Gradle
+- ScalaTest + JUnitRunner
 
-The baseline circular cross-section remains available for comparison.
+The domain simulation remains independent of ScalaFX. ScalaFX is used only for application composition, controls and Canvas rendering.
 
-### Ovoid
+## Default parameters
 
-`OvoidCrossSection` starts from an ellipse and modulates the polar boundary radius:
+Defaults remain deliberately readable rather than dense:
+
+| Parameter | Default |
+|---|---:|
+| Particles | **750** |
+| Axial velocity | **90.0** |
+| Axial response | **2.2** |
+| Angular velocity | **0.55** |
+| Swirl response | **2.0** |
+| Secondary flow | **enabled** |
+| Secondary strength | **18.0** |
+| Secondary response | **1.5** |
+| Boundary fade distance | **18.0** |
+| Trail samples | **48** |
+| Trail lifetime | **2.0 s** |
+| Trail sample interval | **4 physics frames** |
+| Vector-field grid | **15 x 15** |
+
+All values are simulation units unless explicitly stated otherwise.
+
+## Editable sliders
+
+Every numeric slider in 0.4 has a synchronized editable numeric field.
+
+- moving the slider updates the text field,
+- pressing Enter in the text field updates the slider,
+- leaving the text field commits the value,
+- `.` and `,` decimal separators are accepted,
+- out-of-range input is clamped to the slider range,
+- integer controls such as particle count and vector-grid resolution are rounded,
+- invalid/non-finite values are rejected and the current valid value is restored.
+
+The parsing/clamping logic lives in the pure `NumericValueCodec`, while `NumericSliderField` is the ScalaFX adapter.
+
+## Flow parameter model
+
+`SimulationParameters` is now composed from smaller immutable groups:
+
+```text
+SimulationParameters
+├── AxialFlowParameters
+├── SwirlParameters
+├── SecondaryFlowParameters
+└── WallParameters
+```
+
+This avoids a large flat parameter record and makes additional flow profiles easier to add later.
+
+### Axial flow
 
 \[
-R(\phi) = R_{ellipse}(\phi)\left(1 + a\sin\phi\right)
+a_x = k_x(v_{target}-v_x)
 \]
 
-where `a` is the asymmetry parameter.
+### Swirl
 
-### Twisted ovoid
-
-`TwistedPipe` rotates the local cross-section around the x axis:
-
-\[
-\theta(x) = 2\pi N\frac{x}{L}
-\]
-
-where `N` is the number of turns and `L` is pipe length. Physics always works in the local frame; forces therefore contain no shape-specific branching.
-
-## Flow model
-
-Axial flow is controlled as a target velocity:
-
-\[
-a_x = k_x(v_{target} - v_x)
-\]
-
-The solid-body swirl profile remains:
+For the default solid-body profile:
 
 \[
 v_\theta = \omega r
 \]
 
-and `SwirlForce` approaches that target with a first-order response. `WallRepulsionForce` now uses `PipeGeometry.signedDistanceToBoundary` and `PipeGeometry.inwardNormal` rather than circular radius assumptions.
+`SwirlForce` drives the current tangential velocity toward that target.
 
-## Cross-section view
+### Geometry-induced secondary flow
 
-The cross-section view now represents a physical axial slice. Only particles within `crossSectionSliceHalfWidth` of the selected x position are rendered. The `Cross-section x` slider selects the slice from inlet (0%) to outlet (100%).
+The secondary model works in the local `(u,v)` cross-section frame. Its strength is multiplied by a dimensionless twist factor derived from:
+
+\[
+\tau(x) = \frac{d\theta}{dx}
+\]
+
+For the current `TwistedPipe`:
+
+\[
+\theta(x)=2\pi N\frac{x}{L}, \qquad
+\tau=2\pi\frac{N}{L}
+\]
+
+The model field is attenuated close to the real cross-section boundary, providing a simple no-slip-like fade:
+
+\[
+f(d)=\operatorname{clamp}\left(\frac{d}{d_{fade}},0,1\right)
+\]
+
+The resulting local velocity vector is transformed to world space by `LocalFrame`.
+
+## Secondary vector-field view
+
+In **Cross section** view, enable `Show secondary vector field` to display sampled local flow vectors. The `Vector grid` control changes sampling resolution.
+
+The layers are therefore:
+
+```text
+actual cross-section boundary
+        +
+secondary-flow vector field
+        +
+particle positions
+        +
+fading particle trails
+```
+
+This makes it possible to compare the modeled field with the resulting particle motion.
+
+## Fading trails
+
+Trails remain timestamped and bounded by both sample count and age:
+
+\[
+\alpha = \alpha_0\max\left(0,1-\frac{age}{T_{trail}}\right)
+\]
+
+With the default two-second lifetime, old segments disappear instead of accumulating into an unreadable mesh.
+
+## Geometry
+
+Available geometries:
+
+- `Circular`
+- `Ovoid`
+- `TwistedOvoid`
+
+`PipeGeometry` exposes local transforms, signed boundary distance, inward normal, local frame, twist angle and twist rate. Physics does not branch on concrete geometry type.
 
 ## Project structure
 
@@ -103,43 +163,62 @@ src/main/scala/io/codeswarm/schauberger/
 ├── application/
 ├── benchmark/
 ├── geometry/
-│   ├── CrossSectionShape.scala
-│   ├── CircularCrossSection.scala
-│   ├── OvoidCrossSection.scala
-│   ├── LocalFrame.scala
-│   ├── PipeGeometry.scala
-│   ├── StraightPipe.scala
-│   ├── StraightCircularPipe.scala
-│   ├── TwistedPipe.scala
-│   └── GeometryFactory.scala
 ├── math/
 ├── model/
 │   ├── SimulationParameters.scala
+│   ├── AxialFlowParameters.scala
+│   ├── SwirlParameters.scala
+│   ├── SecondaryFlowParameters.scala
+│   ├── WallParameters.scala
 │   ├── GeometryParameters.scala
 │   └── VisualizationParameters.scala
 ├── physics/
+│   ├── AxialFlowForce.scala
+│   ├── SwirlForce.scala
+│   ├── SecondaryFlowForce.scala
+│   ├── WallRepulsionForce.scala
+│   └── secondary/
+│       ├── SecondaryFlowModel.scala
+│       ├── NoSecondaryFlow.scala
+│       ├── TwinVortexSecondaryFlow.scala
+│       ├── BoundaryAttenuation.scala
+│       └── LinearBoundaryAttenuation.scala
 ├── simulation/
+│   ├── SimulationEngine.scala
+│   ├── VelocityDecomposer.scala
+│   ├── SecondaryFlowFieldSampler.scala
+│   └── FlowMetricsCalculator.scala
 ├── ui/
+│   ├── ControlPanel.scala
+│   ├── FlowControlPane.scala
+│   ├── GeometryControlPane.scala
+│   ├── VisualizationControlPane.scala
+│   ├── NumericSliderField.scala
+│   └── NumericValueCodec.scala
 └── visualization/
+    ├── VectorFieldRenderer.scala
+    ├── TrailRenderer.scala
+    ├── ParticleRenderer.scala
+    └── PipeRenderer.scala
 ```
 
-## Architectural rule
-
-Dependencies point toward domain abstractions:
+## Architecture rule
 
 ```text
 ScalaFX UI
-   ↓
+    ↓
 SimulationController
-   ↓
-SimulationEngine ───── PipeGeometry
-   ↓                     ↓
-FlowForce          CrossSectionShape
-   ↓
-math / model
+    ↓
+SimulationEngine ────────────── PipeGeometry
+    ↓                              ↓
+CompositeFlowForce             LocalFrame
+    ↓                              ↓
+Axial / Swirl / Secondary / Wall  CrossSectionShape
+    ↓
+math + immutable model
 ```
 
-No physics class checks `Circular`, `Ovoid`, or `TwistedOvoid` with `if`/`match`.
+`SimulationEngine`, `FlowForce` and geometry code have no dependency on ScalaFX.
 
 ## Build and run
 
@@ -165,32 +244,52 @@ or:
 gradle benchmark
 ```
 
-Scenarios:
+Particle scenarios:
 
 - `circular-axial`
 - `circular-swirl`
 - `ovoid-swirl`
 - `twisted-ovoid-swirl`
+- `twisted-ovoid-swirl-secondary`
 
 Population sizes: 1,000 / 10,000 / 50,000 particles.
 
-Results are saved to:
+Secondary-field sampling is additionally measured at 15x15, 30x30 and 60x60 grid resolutions.
+
+Results are written to:
 
 ```text
-benchmark/results/benchmark-0.3.0.json
+benchmark/results/benchmark-0.4.0.json
 ```
 
-This is a lightweight regression benchmark, not a replacement for JMH.
+The benchmark is intended for regression tracking, not as a replacement for JMH.
 
 ## Tests
 
-The suite covers vector mathematics, cross-section contracts, ovoid asymmetry, twist transforms, geometry factory, default settings, flow forces, arbitrary-shape particle generation, boundary invariants, metrics, projections, fading/expiring trails, and long-running engine invariants.
+The suite covers:
+
+- vector mathematics,
+- circular and ovoid cross-sections,
+- local/world transforms,
+- twist rate,
+- axial/swirl/wall forces,
+- secondary-flow attenuation and symmetry,
+- finite secondary-field samples,
+- long-running containment invariants,
+- enabled-vs-disabled secondary-flow trajectory differences,
+- fading trails,
+- parameter defaults,
+- numeric text parsing/clamping for editable sliders.
 
 ## Roadmap
 
 - **0.1** axial particle-flow foundation
 - **0.2** 3D swirl and helical trajectories
-- **0.3** geometry-driven circular / ovoid / twisted-ovoid flow
-- **0.4** geometry-induced secondary flow and Dean-like vortices
-- **0.5** field sampling / heat maps and more physical diagnostics
-- later: more advanced vortex profiles and comparison with CFD reference cases
+- **0.3** circular / ovoid / twisted-ovoid geometry
+- **0.4** geometry-induced secondary flow + vector field + editable slider values
+- **0.5** velocity/vorticity heat maps and field diagnostics
+- **0.6** multiple vortex profiles
+- **0.7** double / counter-rotating vortex experiments
+- **0.8** pressure and energy proxies
+- **0.9** comparison/experiment workspace
+- **1.0** complete Schauberger-inspired flow laboratory

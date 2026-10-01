@@ -1,80 +1,161 @@
-# Architecture — milestone 0.3
+# Architecture — milestone 0.4
 
 ## Purpose
 
-Milestone 0.3 makes geometry a first-class domain abstraction. Physics operates on signed boundary distance, inward normals, local frames and coordinate transforms rather than assuming a circular radius.
+Milestone 0.4 extends the geometry-first architecture with a secondary cross-sectional flow model. Geometry now influences motion in two distinct ways:
 
-## Main abstractions
+1. as a hard/soft boundary,
+2. as input to a local secondary-flow target field.
 
-```text
-CrossSectionShape
-├── CircularCrossSection
-└── OvoidCrossSection
+The model remains intentionally lighter than CFD.
 
-PipeGeometry
-├── StraightPipe
-├── StraightCircularPipe   (convenience baseline)
-└── TwistedPipe
-```
-
-`GeometryFactory` is the only component translating UI-level `GeometryParameters` into concrete geometry instances.
-
-## Local coordinates
-
-For a twisted pipe, world `(y,z)` coordinates are rotated by `-theta(x)` before shape tests. Local coordinates are rotated back by `+theta(x)` for rendering/generation.
+## Dependency direction
 
 ```text
-world particle
-    ↓ toLocalCrossSection
-local (u,v)
-    ↓ CrossSectionShape
-contains / distance / normal / clamp
+ScalaFX
+  ↓
+UI panes + NumericSliderField
+  ↓
+SimulationController
+  ↓
+SimulationEngine
+  ↓
+CompositeFlowForce
+  ├── AxialFlowForce
+  ├── SwirlForce
+  ├── SecondaryFlowForce
+  └── WallRepulsionForce
+        ↓
+PipeGeometry + immutable model + math
 ```
 
-## Physics dependency
+Physics never imports ScalaFX.
 
-`AxialFlowForce`, `SwirlForce`, and `WallRepulsionForce` depend only on `PipeGeometry`.
-
-- Axial flow uses `tangentAt`.
-- Swirl uses centerline + local tangent.
-- Wall repulsion uses `signedDistanceToBoundary` + `inwardNormal`.
-- `PipeBoundaryHandler` uses `clampInside`.
-
-There is no shape-specific branching in physics.
-
-## Runtime geometry changes
-
-`SimulationEngine` no longer owns one geometry. Geometry is passed to `initialState` and `step`, so `SimulationController` can replace the active geometry and reset particles without rebuilding the engine.
-
-## Parameter separation
+## Parameter composition
 
 ```text
 SimulationParameters
-  physical/numerical values
-
-GeometryParameters
-  geometry type and dimensions
-
-VisualizationParameters
-  view, trails and cross-section slice
+├── particleCount
+├── AxialFlowParameters
+├── SwirlParameters
+├── SecondaryFlowParameters
+├── WallParameters
+├── maxVelocity
+└── fixedTimeStep
 ```
 
-This prevents UI-only properties such as trail lifetime from contaminating physical simulation state.
+`GeometryParameters` and `VisualizationParameters` remain separate because geometry reconstruction and rendering configuration have different lifecycle rules from physical parameters.
 
-## Trails
+## Secondary-flow model
 
-`TrailBuffer` is intentionally mutable but render-only. Each `TrailSample` contains position and simulation time. Samples are recorded every N physics frames and removed when they exceed either maximum length or maximum age. The immutable simulation state is unaffected.
-
-## Cross-section rendering
-
-The selected slice is:
+`SecondaryFlowModel` returns a target velocity in local cross-section coordinates:
 
 ```text
-sliceX = pipe.length * crossSectionFraction
+world particle
+    ↓ PipeGeometry.toLocalCrossSection
+local (u,v)
+    ↓ SecondaryFlowModel
+target local velocity
+    ↓ LocalFrame.crossSectionVectorToWorld
+world target velocity
+    ↓ SecondaryFlowForce
+acceleration contribution
 ```
 
-Only particles within `crossSectionSliceHalfWidth` are shown. The boundary is sampled parametrically from the actual rotated cross-section.
+`SecondaryFlowForce` is responsible for first-order response toward that target. The model itself does not know about particle acceleration integration.
 
-## Future extension point
+## Current profile
 
-Milestone 0.4 can add `SecondaryFlowForce` derived from twist/curvature while preserving the engine and geometry contracts.
+`TwinVortexSecondaryFlow` is a smooth stream-function-inspired educational field. It depends on:
+
+- local cross-section position,
+- local twist rate,
+- secondary strength,
+- boundary attenuation.
+
+`NoSecondaryFlow` is available for regression and explicit neutral behavior.
+
+## Boundary attenuation
+
+```text
+BoundaryAttenuation
+└── LinearBoundaryAttenuation
+```
+
+The model approaches zero near the wall using signed distance supplied by `CrossSectionShape`. This keeps the profile independent of circular/ovoid shape details.
+
+## Local frame
+
+`LocalFrame` contains:
+
+- tangent,
+- normal,
+- binormal,
+- cross-section rotation angle.
+
+It also converts vectors between local cross-section space and world space. `TwistedPipe` therefore rotates both geometry and modeled secondary velocity consistently.
+
+## Field sampling and rendering
+
+```text
+SecondaryFlowModel
+    ↓
+SecondaryFlowFieldSampler
+    ↓ Vector[FieldSample]
+VectorFieldRenderer
+```
+
+The sampler is domain-side and ScalaFX-free. `VectorFieldRenderer` is presentation-only.
+
+This separation allows the sampling cost to be benchmarked without starting JavaFX.
+
+## Velocity diagnostics
+
+`VelocityDecomposer` projects particle velocity into the local frame. `FlowMetricsCalculator` reports:
+
+- mean axial velocity,
+- mean tangential velocity,
+- mean angular velocity,
+- vorticity proxy,
+- normalized radial position,
+- mean modeled secondary velocity,
+- secondary-flow energy-ratio proxy.
+
+The last two values describe the simplified model and should not be interpreted as CFD-derived physical measurements.
+
+## UI decomposition
+
+The former monolithic control panel is split into:
+
+```text
+ControlPanel
+├── FlowControlPane
+├── GeometryControlPane
+└── VisualizationControlPane
+```
+
+This reduces inheritance-name collisions with ScalaFX controls and makes each section easier to test and extend.
+
+Every numeric control uses:
+
+```text
+NumericSliderField
+├── Slider
+├── TextField
+└── NumericValueCodec
+```
+
+`NumericValueCodec` is pure logic. This allows parsing/clamping behavior to be unit tested without starting the JavaFX toolkit.
+
+## State and mutability
+
+Physical state remains immutable (`SimulationState`, `Particle`). Runtime/UI state lives in `SimulationController`. `TrailBuffer` remains intentionally mutable but visualization-only.
+
+## Extension points for 0.5+
+
+- Eulerian velocity-grid cache,
+- velocity magnitude heat map,
+- vorticity heat map,
+- additional `SecondaryFlowModel` profiles,
+- additional `SwirlProfile` implementations,
+- quantitative field comparisons.

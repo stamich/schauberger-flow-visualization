@@ -2,6 +2,56 @@
 
 All notable changes to this project are documented here.
 
+## [0.4.0-buildfix1] - 2026-10-01
+
+### Fixed
+
+- Fixed `NumericSliderField` compilation with ScalaFX by constructing `TextField` with the no-argument ScalaFX constructor and assigning its `text` property explicitly.
+- Preserved bidirectional slider/text synchronization and numeric validation behavior.
+
+## [0.4.0] - 2026-10-01
+
+### Added
+- `SecondaryFlowModel` abstraction for geometry-induced cross-sectional target velocity fields.
+- `NoSecondaryFlow` neutral model.
+- `TwinVortexSecondaryFlow` smooth two-cell educational field driven by local twist.
+- `BoundaryAttenuation` and `LinearBoundaryAttenuation` for wall fading.
+- `SecondaryFlowForce` integrated into the existing composite force pipeline.
+- `VelocityComponents` and `VelocityDecomposer`.
+- `FieldSample` and `SecondaryFlowFieldSampler`.
+- `VectorFieldRenderer` for cross-section secondary-flow arrows.
+- Mean secondary-velocity and secondary-flow energy-ratio diagnostics.
+- `AxialFlowParameters`, `SwirlParameters`, `SecondaryFlowParameters` and `WallParameters`.
+- `NumericSliderField`, pairing every numeric slider with editable numeric input.
+- `NumericValueCodec` for pure parsing, validation, clamping, rounding and formatting.
+- `FlowControlPane`, `GeometryControlPane` and `VisualizationControlPane`.
+- UI controls for enabling secondary flow, secondary strength/response, wall fade, vector-field visibility and grid resolution.
+- Secondary-flow tests covering zero-twist behavior, symmetry, finite values and wall attenuation.
+- Numeric input tests for dot/comma decimals, invalid values, range clamping and integer rounding.
+- `twisted-ovoid-swirl-secondary` benchmark scenario.
+- 15x15 / 30x30 / 60x60 vector-field sampling benchmarks.
+- `benchmark/results/benchmark-0.4.0.json` output.
+
+### Changed
+- `SimulationParameters` is now composed from focused parameter records instead of one flat numeric record.
+- `LocalFrame` now converts vectors between local cross-section coordinates and world space.
+- `PipeGeometry` exposes `twistRateAt(x)` as an extension point for future non-uniform twist.
+- `FlowMetricsCalculator` receives the active simulation parameters and secondary-flow model.
+- `SimulationRenderer` can render the secondary vector field using the active physical parameters.
+- The monolithic 0.3 `ControlPanel` is now only a composition container for focused panes, reducing ScalaFX inherited-property collision risk.
+- Status display includes modeled secondary velocity and secondary-energy ratio.
+- Benchmark suite now measures both particle simulation and field sampling.
+
+### Preserved
+- 750-particle readable startup default.
+- Axial velocity 90.0, angular velocity 0.55 and swirl response 2.0 defaults.
+- 48-sample, 2-second fading trails sampled every four physics frames.
+- Immutable physical simulation state.
+- Geometry-independent `SimulationEngine`.
+- Semi-implicit Euler integration and fixed timestep.
+- Circular, ovoid and twisted-ovoid geometry modes.
+- ScalaFX Canvas rendering and separation between domain physics and UI.
+
 ## [0.3.0-buildfix1] - 2026-10-01
 
 ### Fixed
