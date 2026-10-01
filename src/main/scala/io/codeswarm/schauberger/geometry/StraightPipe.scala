@@ -2,29 +2,27 @@ package io.codeswarm.schauberger.geometry
 
 import io.codeswarm.schauberger.math.{Vector2D, Vector3D}
 
-/** Backward-friendly convenience geometry for the circular baseline.
+/** Straight untwisted pipe with an arbitrary cross-section shape.
   *
   * @param length pipe length along the global x axis
-  * @param radius circular cross-section radius
+  * @param crossSection immutable local cross-section shape
   */
-final case class StraightCircularPipe(length: Double, radius: Double) extends PipeGeometry {
-  require(length > 0.0 && radius > 0.0)
+final case class StraightPipe(length: Double, crossSection: CrossSectionShape) extends PipeGeometry {
+  require(length > 0.0)
 
-  override val crossSection: CrossSectionShape = CircularCrossSection(radius)
-
-  /** Converts world y-z directly to local circle coordinates. */
+  /** Drops x and interprets world y-z directly as local coordinates. */
   override def toLocalCrossSection(position: Vector3D): Vector2D = Vector2D(position.y, position.z)
 
-  /** Converts local circle coordinates directly to world y-z. */
+  /** Embeds local u-v coordinates directly into world y-z. */
   override def fromLocalCrossSection(x: Double, local: Vector2D): Vector3D = Vector3D(x, local.x, local.y)
 
-  /** Returns the constant untwisted world frame. */
+  /** Returns the constant global x/y/z frame of an untwisted pipe. */
   override def localFrameAt(position: Vector3D): LocalFrame =
     LocalFrame(Vector3D.UnitX, Vector3D.UnitY, Vector3D.UnitZ, 0.0)
 
-  /** Returns zero twist rate. */
+  /** Returns zero because the cross-section is not rotating. */
   override def twistRate: Double = 0.0
 
-  /** Returns zero rotation angle. */
+  /** Returns zero orientation at every axial location. */
   override def rotationAngleAt(x: Double): Double = 0.0
 }
