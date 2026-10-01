@@ -1,137 +1,80 @@
-# Architecture — milestone 0.2
+# Architecture — milestone 0.3
 
-## Design goals
+## Purpose
 
-Milestone 0.2 keeps the 0.1 separation between simulation and ScalaFX while upgrading the physical coordinate model from 2D to 3D. The core rules are:
+Milestone 0.3 makes geometry a first-class domain abstraction. Physics operates on signed boundary distance, inward normals, local frames and coordinate transforms rather than assuming a circular radius.
 
-1. `SimulationEngine` contains no UI dependencies.
-2. Physical state is immutable.
-3. Forces are composable strategies.
-4. Swirl behavior is split into `SwirlForce` and a replaceable `SwirlProfile`.
-5. Rendering consumes projections instead of teaching physics about screen coordinates.
-6. Mutable history is confined to the renderer (`TrailBuffer`).
-
-## Dependency direction
+## Main abstractions
 
 ```text
-application
-   |
-   v
-ui --------------------> visualization
-   |                           |
-   v                           v
-simulation ----------------> model/math
-   |
-   +----> physics ----------> geometry/model/math
-   `----> geometry/model/math
+CrossSectionShape
+├── CircularCrossSection
+└── OvoidCrossSection
+
+PipeGeometry
+├── StraightPipe
+├── StraightCircularPipe   (convenience baseline)
+└── TwistedPipe
 ```
 
-There is no dependency from `physics`, `simulation`, `geometry`, `model` or `math` to ScalaFX.
+`GeometryFactory` is the only component translating UI-level `GeometryParameters` into concrete geometry instances.
 
-## Simulation pipeline
+## Local coordinates
+
+For a twisted pipe, world `(y,z)` coordinates are rotated by `-theta(x)` before shape tests. Local coordinates are rotated back by `+theta(x)` for rendering/generation.
 
 ```text
-Particle
-   |
-   v
-FlowContext
-   |
-   v
-CompositeFlowForce
-   +-- AxialFlowForce
-   +-- SwirlForce
-   |      `-- SwirlProfile
-   |             `-- SolidBodySwirlProfile
-   `-- WallRepulsionForce
-   |
-   v
-SemiImplicitEulerIntegrator
-   |
-   v
-PipeBoundaryHandler
-   |
-   v
-new Particle
+world particle
+    ↓ toLocalCrossSection
+local (u,v)
+    ↓ CrossSectionShape
+contains / distance / normal / clamp
 ```
 
-The complete population forms a new immutable `SimulationState` for every physics step.
+## Physics dependency
 
-## 3D convention
+`AxialFlowForce`, `SwirlForce`, and `WallRepulsionForce` depend only on `PipeGeometry`.
 
-- x: pipe axis / inlet-to-outlet direction
-- y: first cross-section coordinate
-- z: second cross-section coordinate
+- Axial flow uses `tangentAt`.
+- Swirl uses centerline + local tangent.
+- Wall repulsion uses `signedDistanceToBoundary` + `inwardNormal`.
+- `PipeBoundaryHandler` uses `clampInside`.
 
-For a straight pipe the center-line tangent is `(1, 0, 0)` and radial distance is `sqrt(y^2 + z^2)`.
+There is no shape-specific branching in physics.
 
-## Swirl model
+## Runtime geometry changes
 
-`SwirlForce` does not hard-code a vortex profile. `SwirlProfile` returns the target tangential speed at a radius.
+`SimulationEngine` no longer owns one geometry. Geometry is passed to `initialState` and `step`, so `SimulationController` can replace the active geometry and reset particles without rebuilding the engine.
 
-For 0.2:
+## Parameter separation
 
 ```text
-SolidBodySwirlProfile:
-    targetTangentialSpeed = angularVelocity * radius
+SimulationParameters
+  physical/numerical values
+
+GeometryParameters
+  geometry type and dimensions
+
+VisualizationParameters
+  view, trails and cross-section slice
 ```
 
-The force computes:
+This prevents UI-only properties such as trail lifetime from contaminating physical simulation state.
+
+## Trails
+
+`TrailBuffer` is intentionally mutable but render-only. Each `TrailSample` contains position and simulation time. Samples are recorded every N physics frames and removed when they exceed either maximum length or maximum age. The immutable simulation state is unaffected.
+
+## Cross-section rendering
+
+The selected slice is:
 
 ```text
-radial = position - centerLine(position.x)
-tangentialDirection = tangent cross radial
-currentTangentialSpeed = velocity dot tangentialDirection
-acceleration = tangentialDirection * swirlResponse * (target - current)
+sliceX = pipe.length * crossSectionFraction
 ```
 
-Rotation direction is applied as a sign to `tangentialDirection`.
+Only particles within `crossSectionSliceHalfWidth` are shown. The boundary is sampled parametrically from the actual rotated cross-section.
 
-This makes 0.3+ profiles such as Rankine or Lamb-Oseen additive rather than invasive.
+## Future extension point
 
-## Boundary policy
-
-`WallRepulsionForce` is soft confinement. `PipeBoundaryHandler` is hard safety:
-
-- x > pipe length -> respawn at inlet
-- radial position outside wall -> clamp just inside wall
-- outward normal velocity after clamp -> removed
-
-## Fixed timestep
-
-`SimulationController` accumulates display time and advances the engine in `fixedTimeStep` increments. Rendering cadence therefore does not directly determine physics step size.
-
-## Rendering
-
-3D physics is projected into 2D:
-
-```text
-LongitudinalProjection: (x, y, z) -> (x, y)
-CrossSectionProjection: (x, y, z) -> (y, z)
-```
-
-`ViewportTransform` then maps projected world coordinates to Canvas pixels.
-
-`TrailBuffer` stores recent positions by particle id. It is intentionally mutable because it is ephemeral rendering state, not simulation state.
-
-## Metrics
-
-`FlowMetricsCalculator` derives:
-
-- mean axial velocity
-- signed mean tangential velocity
-- signed mean angular velocity `v_theta / r`
-- solid-body vorticity proxy `2 * mean angular velocity`
-
-Metrics do not feed back into physics.
-
-## Extension points for milestone 0.3
-
-The following abstractions should remain stable:
-
-- `SimulationEngine`
-- `ParticleIntegrator`
-- `FlowForce`
-- `SwirlProfile`
-- `Projection`
-
-Milestone 0.3 should primarily extend `PipeGeometry` and adjust geometry-aware wall/radial calculations rather than rewrite the engine.
+Milestone 0.4 can add `SecondaryFlowForce` derived from twist/curvature while preserving the engine and geometry contracts.
