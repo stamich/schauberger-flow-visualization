@@ -1,80 +1,104 @@
 package io.codeswarm.schauberger.ui
 
-import io.codeswarm.schauberger.geometry.PipeGeometry
-import io.codeswarm.schauberger.model.{FlowMetrics, SimulationParameters, SimulationState, ViewMode}
+import io.codeswarm.schauberger.geometry.{GeometryFactory, PipeGeometry}
+import io.codeswarm.schauberger.model._
 import io.codeswarm.schauberger.simulation.{FlowMetricsCalculator, SimulationEngine}
 import io.codeswarm.schauberger.visualization.SimulationRenderer
 
-/** Coordinates UI commands, fixed-timestep simulation updates and rendering. */
+/** Coordinates immutable simulation state, replaceable geometry and ScalaFX rendering.
+  *
+  * The controller owns UI/runtime mutability. The physical engine itself remains
+  * independent from ScalaFX and from any concrete pipe shape.
+  */
 final class SimulationController(
     engine: SimulationEngine,
-    geometry: PipeGeometry,
+    geometryFactory: GeometryFactory,
     renderer: SimulationRenderer,
     metricsCalculator: FlowMetricsCalculator,
-    initialParameters: SimulationParameters
+    initialSimulation: SimulationParameters,
+    initialGeometry: GeometryParameters,
+    initialVisualization: VisualizationParameters
 ) {
-  private var parametersValue = initialParameters
-  private var stateValue = engine.initialState(initialParameters)
+  private var simulationValue = initialSimulation
+  private var geometryParametersValue = initialGeometry
+  private var visualizationValue = initialVisualization
+  private var geometryValue: PipeGeometry = geometryFactory.create(initialGeometry)
+  private var stateValue = engine.initialState(initialSimulation, geometryValue)
   private var runningValue = true
-  private var viewModeValue: ViewMode = ViewMode.Longitudinal
   private var accumulator = 0.0
   private var fpsElapsed = 0.0
   private var fpsFrames = 0
   private var fpsValue = 0.0
 
-  /** Current immutable parameter set. */
-  def parameters: SimulationParameters = parametersValue
+  /** Current physical/numerical settings. */
+  def simulationParameters: SimulationParameters = simulationValue
 
-  /** Current immutable physical state. */
+  /** Current geometry construction settings. */
+  def geometryParameters: GeometryParameters = geometryParametersValue
+
+  /** Current render-only settings. */
+  def visualizationParameters: VisualizationParameters = visualizationValue
+
+  /** Current concrete geometry generated from [[geometryParameters]]. */
+  def geometry: PipeGeometry = geometryValue
+
+  /** Current immutable particle state. */
   def state: SimulationState = stateValue
 
-  /** Current selected visualization projection. */
-  def viewMode: ViewMode = viewModeValue
-
-  /** Whether physics updates are enabled. */
+  /** Returns whether fixed-step physics is currently advancing. */
   def isRunning: Boolean = runningValue
 
-  /** Most recently calculated rendering frames per second. */
+  /** Latest approximately one-second rendering FPS estimate. */
   def fps: Double = fpsValue
 
   /** Calculates current aggregate flow diagnostics. */
-  def metrics: FlowMetrics = metricsCalculator.calculate(stateValue, geometry)
+  def metrics: FlowMetrics = metricsCalculator.calculate(stateValue, geometryValue)
 
-  /** Starts or resumes simulation updates. */
+  /** Starts or resumes physics updates. */
   def start(): Unit = runningValue = true
 
-  /** Pauses physics updates while retaining the rendered frame. */
+  /** Pauses physics while preserving the current frame and trails. */
   def pause(): Unit = runningValue = false
 
-  /** Replaces user-adjustable parameters without recreating particles. */
-  def updateParameters(next: SimulationParameters): Unit = parametersValue = next
+  /** Replaces live physical parameters without recreating particles. */
+  def updateSimulationParameters(next: SimulationParameters): Unit = simulationValue = next
 
-  /** Changes the active two-dimensional view. */
-  def setViewMode(next: ViewMode): Unit = viewModeValue = next
+  /** Replaces render-only parameters and redraws the current state. */
+  def updateVisualizationParameters(next: VisualizationParameters): Unit = {
+    visualizationValue = next
+    renderCurrent()
+  }
 
-  /** Recreates particle state and clears accumulated visual trails. */
+  /** Rebuilds active geometry and resets particles so every particle fits the new volume. */
+  def updateGeometryParameters(next: GeometryParameters): Unit = {
+    geometryParametersValue = next
+    geometryValue = geometryFactory.create(next)
+    reset()
+  }
+
+  /** Recreates deterministic particle state and clears render-only history. */
   def reset(): Unit = {
-    stateValue = engine.initialState(parametersValue)
+    stateValue = engine.initialState(simulationValue, geometryValue)
     accumulator = 0.0
     renderer.clearTrails()
   }
 
-  /** Advances fixed-step physics according to one display-frame duration and renders. */
+  /** Advances fixed-step physics for one display-frame duration and renders the result. */
   def onFrame(frameSeconds: Double): Unit = {
     val safeFrame = math.max(0.0, math.min(frameSeconds, 0.25))
     updateFps(safeFrame)
     if (runningValue) {
       accumulator += safeFrame
-      while (accumulator >= parametersValue.fixedTimeStep) {
-        stateValue = engine.step(stateValue, parametersValue, parametersValue.fixedTimeStep)
-        accumulator -= parametersValue.fixedTimeStep
+      while (accumulator >= simulationValue.fixedTimeStep) {
+        stateValue = engine.step(stateValue, simulationValue, geometryValue, simulationValue.fixedTimeStep)
+        accumulator -= simulationValue.fixedTimeStep
       }
     }
-    renderer.render(stateValue, geometry, parametersValue, viewModeValue)
+    renderer.render(stateValue, geometryValue, visualizationValue)
   }
 
   /** Renders the current state without advancing physics. */
-  def renderCurrent(): Unit = renderer.render(stateValue, geometry, parametersValue, viewModeValue)
+  def renderCurrent(): Unit = renderer.render(stateValue, geometryValue, visualizationValue)
 
   /** Updates the rolling FPS estimate approximately once per second. */
   private def updateFps(frameSeconds: Double): Unit = {
