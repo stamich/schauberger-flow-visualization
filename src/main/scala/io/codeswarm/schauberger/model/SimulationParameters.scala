@@ -1,21 +1,9 @@
 package io.codeswarm.schauberger.model
 
-/** Immutable user-adjustable and numerical parameters for milestone 0.2.
+/** Immutable physical/numerical parameters for milestone 0.3.
   *
-  * Quantities use simulation units rather than calibrated SI units. The model is an
-  * educational particle visualization, not a Navier-Stokes CFD solver.
-  *
-  * @param particleCount number of retained tracer particles
-  * @param axialVelocity target velocity along the pipe axis
-  * @param axialResponse response rate toward target axial velocity
-  * @param angularVelocity target solid-body angular velocity
-  * @param swirlResponse response rate toward the tangential velocity requested by the swirl profile
-  * @param rotationDirection clockwise or counter-clockwise swirl
-  * @param wallStrength strength of soft radial wall repulsion
-  * @param wallThreshold distance from the wall at which soft repulsion starts
-  * @param maxVelocity absolute safety limit for particle speed
-  * @param fixedTimeStep physics step in seconds
-  * @param trailLength maximum number of rendered historical points per particle
+  * Values use simulation units. Defaults are intentionally calmer than 0.2 so the
+  * first frame remains readable with the new geometry-driven rendering.
   */
 final case class SimulationParameters(
     particleCount: Int,
@@ -27,35 +15,27 @@ final case class SimulationParameters(
     wallStrength: Double,
     wallThreshold: Double,
     maxVelocity: Double,
-    fixedTimeStep: Double,
-    trailLength: Int
+    fixedTimeStep: Double
 ) {
-  require(particleCount > 0, "particleCount must be positive")
-  require(axialVelocity >= 0.0, "axialVelocity must be non-negative")
-  require(axialResponse >= 0.0, "axialResponse must be non-negative")
-  require(angularVelocity >= 0.0, "angularVelocity must be non-negative")
-  require(swirlResponse >= 0.0, "swirlResponse must be non-negative")
-  require(wallStrength >= 0.0, "wallStrength must be non-negative")
-  require(wallThreshold >= 0.0, "wallThreshold must be non-negative")
-  require(maxVelocity > 0.0, "maxVelocity must be positive")
-  require(fixedTimeStep > 0.0, "fixedTimeStep must be positive")
-  require(trailLength >= 0, "trailLength must be non-negative")
+  require(particleCount > 0)
+  require(axialVelocity >= 0.0 && axialResponse >= 0.0)
+  require(angularVelocity >= 0.0 && swirlResponse >= 0.0)
+  require(wallStrength >= 0.0 && wallThreshold >= 0.0)
+  require(maxVelocity > 0.0 && fixedTimeStep > 0.0)
 }
 
-/** Default milestone 0.2 simulation parameters. */
+/** Default physical settings. */
 object SimulationParameters {
-  /** Default configuration tuned for clearly visible helical motion. */
   val Default: SimulationParameters = SimulationParameters(
-    particleCount = 1500,
-    axialVelocity = 120.0,
-    axialResponse = 2.5,
-    angularVelocity = 0.9,
-    swirlResponse = 3.0,
+    particleCount = 750,
+    axialVelocity = 90.0,
+    axialResponse = 2.2,
+    angularVelocity = 0.55,
+    swirlResponse = 2.0,
     rotationDirection = RotationDirection.CounterClockwise,
-    wallStrength = 90.0,
-    wallThreshold = 18.0,
-    maxVelocity = 240.0,
-    fixedTimeStep = 1.0 / 120.0,
-    trailLength = 60
+    wallStrength = 85.0,
+    wallThreshold = 16.0,
+    maxVelocity = 210.0,
+    fixedTimeStep = 1.0 / 120.0
   )
 }
