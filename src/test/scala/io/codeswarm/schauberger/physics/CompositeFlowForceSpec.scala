@@ -1,24 +1,19 @@
 package io.codeswarm.schauberger.physics
 
 import io.codeswarm.schauberger.geometry.StraightCircularPipe
-import io.codeswarm.schauberger.math.Vector2D
+import io.codeswarm.schauberger.math.Vector3D
 import io.codeswarm.schauberger.model.{Particle, SimulationParameters}
-import org.junit.runner.RunWith
 import org.scalatest.funsuite.AnyFunSuite
-import org.scalatestplus.junit.JUnitRunner
 
-/** Verifies that force composition is additive and engine-independent. */
-@RunWith(classOf[JUnitRunner])
+/** Tests vector addition of independent force strategies. */
 final class CompositeFlowForceSpec extends AnyFunSuite {
-  test("composite force sums individual acceleration vectors") {
-    val first = new FlowForce {
-      override def acceleration(particle: Particle, context: FlowContext): Vector2D = Vector2D(1.0, 2.0)
-    }
-    val second = new FlowForce {
-      override def acceleration(particle: Particle, context: FlowContext): Vector2D = Vector2D(3.0, -1.0)
-    }
-    val context = FlowContext(StraightCircularPipe(100.0, 10.0), SimulationParameters.Default)
-    val total = CompositeFlowForce(Vector(first, second)).acceleration(Particle(1L, Vector2D.Zero, Vector2D.Zero), context)
-    assert(total == Vector2D(4.0, 1.0))
+  test("sums force contributions") {
+    val f1 = new FlowForce { override def acceleration(p: Particle, c: FlowContext): Vector3D = Vector3D(1, 2, 3) }
+    val f2 = new FlowForce { override def acceleration(p: Particle, c: FlowContext): Vector3D = Vector3D(4, 5, 6) }
+    val total = CompositeFlowForce(Vector(f1, f2)).acceleration(
+      Particle(1, Vector3D.Zero, Vector3D.Zero),
+      FlowContext(StraightCircularPipe(10, 1), SimulationParameters.Default)
+    )
+    assert(total == Vector3D(5, 7, 9))
   }
 }
