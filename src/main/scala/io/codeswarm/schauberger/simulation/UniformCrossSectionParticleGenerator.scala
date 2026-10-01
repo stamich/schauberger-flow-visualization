@@ -25,7 +25,7 @@ final class UniformCrossSectionParticleGenerator(seed: Long) extends ParticleGen
       Particle(
         id = index.toLong,
         position = geometry.fromLocalCrossSection(x, randomLocalPoint(geometry)),
-        velocity = Vector3D(parameters.axialVelocity, 0.0, 0.0)
+        velocity = Vector3D(parameters.axial.velocity, 0.0, 0.0)
       )
     }
   }
@@ -38,7 +38,7 @@ final class UniformCrossSectionParticleGenerator(seed: Long) extends ParticleGen
   ): Particle =
     particle.copy(
       position = geometry.fromLocalCrossSection(0.0, randomLocalPoint(geometry)),
-      velocity = Vector3D(parameters.axialVelocity, 0.0, 0.0)
+      velocity = Vector3D(parameters.axial.velocity, 0.0, 0.0)
     )
 
   /** Samples inside a bounding square until the shape accepts a point with a small wall margin. */
