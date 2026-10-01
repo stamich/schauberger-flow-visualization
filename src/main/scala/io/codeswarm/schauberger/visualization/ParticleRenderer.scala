@@ -1,19 +1,28 @@
 package io.codeswarm.schauberger.visualization
 
-import io.codeswarm.schauberger.model.SimulationState
+import io.codeswarm.schauberger.model.{SimulationState, ViewMode}
 import scalafx.scene.canvas.GraphicsContext
 import scalafx.scene.paint.Color
 
-/** Renders particles efficiently onto a single Canvas. */
-final class ParticleRenderer(particleDiameter: Double = 3.2) {
-
-  /** Draws every particle using the supplied world-to-screen transform. */
-  def render(gc: GraphicsContext, state: SimulationState, transform: ViewportTransform): Unit = {
-    gc.fill = Color.rgb(110, 205, 255, 0.88)
-    val radius = particleDiameter / 2.0
+/** Renders tracer particles on a Canvas through the selected projection. */
+final class ParticleRenderer {
+  /** Draws all particles and uses z depth to modulate longitudinal marker size. */
+  def render(
+      gc: GraphicsContext,
+      state: SimulationState,
+      projection: Projection,
+      transform: ViewportTransform,
+      viewMode: ViewMode,
+      pipeRadius: Double
+  ): Unit = {
+    gc.fill = Color.web("#2f9de0", 0.86)
     state.particles.foreach { particle =>
-      val screen = transform.worldToScreen(particle.position)
-      gc.fillOval(screen.x - radius, screen.y - radius, particleDiameter, particleDiameter)
+      val p = transform.worldToScreen(projection.project(particle.position))
+      val depth = if (viewMode == ViewMode.Longitudinal && pipeRadius > 0.0)
+        math.max(-1.0, math.min(1.0, particle.position.z / pipeRadius))
+      else 0.0
+      val diameter = 2.6 + 1.2 * (depth + 1.0) / 2.0
+      gc.fillOval(p.x - diameter / 2.0, p.y - diameter / 2.0, diameter, diameter)
     }
   }
 }

@@ -1,16 +1,15 @@
 package io.codeswarm.schauberger.simulation
 
-import io.codeswarm.schauberger.math.Vector2D
+import io.codeswarm.schauberger.math.Vector3D
 import io.codeswarm.schauberger.model.Particle
 
-/** Integrates particle motion over a time step. */
+/** Numerical integration strategy advancing one particle. */
 trait ParticleIntegrator {
-
-  /** Produces the next particle state from acceleration and elapsed simulation time.
-    *
-    * @param particle current particle state
-    * @param acceleration acceleration acting during the step
-    * @param deltaTime step duration in seconds
-    */
-  def integrate(particle: Particle, acceleration: Vector2D, deltaTime: Double): Particle
+  /** Integrates acceleration over deltaTime and returns a new particle state. */
+  def integrate(
+      particle: Particle,
+      acceleration: Vector3D,
+      deltaTime: Double,
+      maxVelocity: Double
+  ): Particle
 }
