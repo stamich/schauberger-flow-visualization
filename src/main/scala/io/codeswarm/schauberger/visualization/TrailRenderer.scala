@@ -19,8 +19,7 @@ final class TrailRenderer {
           val age = math.max(0.0, state.elapsedTime - b.simulationTime)
           val fade = if (visualization.trailDurationSeconds <= 0.0) 0.0 else math.max(0.0, 1.0 - age / visualization.trailDurationSeconds)
           if (fade > 0.01) {
-            val pa = transform.worldToScreen(projection.project(a.position))
-            val pb = transform.worldToScreen(projection.project(b.position))
+            val pa = transform.worldToScreen(projection.project(a.position)); val pb = transform.worldToScreen(projection.project(b.position))
             gc.stroke = Color.web("#78bdf2", 0.30 * fade)
             gc.strokeLine(pa.x, pa.y, pb.x, pb.y)
           }
