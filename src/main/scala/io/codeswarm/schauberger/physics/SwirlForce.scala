@@ -1,11 +1,12 @@
 package io.codeswarm.schauberger.physics
 
 import io.codeswarm.schauberger.math.Vector3D
+import io.codeswarm.schauberger.physics.swirl.SwirlProfileFactory
 import io.codeswarm.schauberger.simulation.ParticleFlowContext
 
-/** Drives tangential velocity around the local pipe tangent toward a profile target. */
-final class SwirlForce(profile: SwirlProfile) extends FlowForce {
-  /** Computes tangential acceleration using cached frame and local position. */
+/** Drives tangential velocity around the local pipe tangent toward the selected profile target. */
+final class SwirlForce(profileFactory: SwirlProfileFactory) extends FlowForce {
+  /** Computes tangential acceleration using cached geometry and a pluggable vortex profile. */
   override def acceleration(context: ParticleFlowContext): Vector3D = {
     val tangent = context.geometry.frame.tangent.normalized
     val radial = context.geometry.frame.crossSectionVectorToWorld(context.geometry.localPosition)
@@ -15,6 +16,7 @@ final class SwirlForce(profile: SwirlProfile) extends FlowForce {
     else {
       val tangential = tangent.cross(radial).normalized * parameters.rotationDirection.sign
       val current = context.particle.velocity.dot(tangential)
+      val profile = profileFactory.create(parameters.profile)
       val target = profile.tangentialVelocity(radius, context.flow.geometry.characteristicRadius, parameters.angularVelocity)
       tangential * ((target - current) * parameters.response)
     }
