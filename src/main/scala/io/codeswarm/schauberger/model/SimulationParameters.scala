@@ -1,6 +1,6 @@
 package io.codeswarm.schauberger.model
 
-/** Immutable physical and numerical parameters for milestone 0.5.
+/** Immutable physical and numerical parameters for milestone 0.6.
   *
   * Flow-domain settings are grouped so the simulation can grow without turning
   * this type into a flat list of unrelated numeric values.
