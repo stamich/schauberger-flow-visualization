@@ -55,7 +55,9 @@ object SchaubergerFlowApplication extends JFXApp3 {
 
     stage = new JFXApp3.PrimaryStage {
       title = "Schauberger Flow Visualization 0.6"
-      scene = new Scene(1580.0, 1080.0) { root = view }
+      scene = new Scene(1580.0, 1080.0) {
+        root = view
+      }
     }
 
     controller.renderCurrent()

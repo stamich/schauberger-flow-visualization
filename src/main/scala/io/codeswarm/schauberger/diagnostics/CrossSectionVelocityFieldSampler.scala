@@ -5,19 +5,19 @@ import io.codeswarm.schauberger.math.{Vector2D, Vector3D}
 import io.codeswarm.schauberger.model.SimulationState
 
 /** Interpolates particle velocities onto a regular local cross-section grid.
-  *
-  * A compact Gaussian kernel is sufficient for the default 750-particle
-  * educational visualization while keeping the implementation deterministic.
-  */
+ *
+ * A compact Gaussian kernel is sufficient for the default 750-particle
+ * educational visualization while keeping the implementation deterministic.
+ */
 final class CrossSectionVelocityFieldSampler {
   /** Samples an interpolated velocity field near one axial slice. */
   def sample(
-      state: SimulationState,
-      geometry: PipeGeometry,
-      axialPosition: Double,
-      resolution: Int,
-      sliceHalfWidth: Double
-  ): VectorFieldGrid = {
+              state: SimulationState,
+              geometry: PipeGeometry,
+              axialPosition: Double,
+              resolution: Int,
+              sliceHalfWidth: Double
+            ): VectorFieldGrid = {
     require(resolution >= 3)
     require(sliceHalfWidth > 0.0)
 

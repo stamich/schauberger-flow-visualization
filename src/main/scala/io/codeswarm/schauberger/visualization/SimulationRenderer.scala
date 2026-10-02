@@ -7,14 +7,14 @@ import scalafx.scene.paint.Color
 
 /** Coordinates heat maps, geometry, trails, particles and vector fields on one Canvas. */
 final class SimulationRenderer(
-    canvas: Canvas,
-    pipeRenderer: PipeRenderer,
-    particleRenderer: ParticleRenderer,
-    trailRenderer: TrailRenderer,
-    trailBuffer: TrailBuffer,
-    vectorFieldRenderer: VectorFieldRenderer,
-    heatMapRenderer: HeatMapRenderer
-) {
+                                canvas: Canvas,
+                                pipeRenderer: PipeRenderer,
+                                particleRenderer: ParticleRenderer,
+                                trailRenderer: TrailRenderer,
+                                trailBuffer: TrailBuffer,
+                                vectorFieldRenderer: VectorFieldRenderer,
+                                heatMapRenderer: HeatMapRenderer
+                              ) {
   /** Renders one complete frame using current physical and visualization parameters. */
   def render(state: SimulationState, geometry: PipeGeometry, simulation: SimulationParameters, visualization: VisualizationParameters): Unit = {
     val graphics = canvas.graphicsContext2D

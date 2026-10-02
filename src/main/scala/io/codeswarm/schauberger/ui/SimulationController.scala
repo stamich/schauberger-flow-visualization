@@ -6,19 +6,19 @@ import io.codeswarm.schauberger.simulation.{FlowMetricsCalculator, SimulationEng
 import io.codeswarm.schauberger.visualization.SimulationRenderer
 
 /** Coordinates immutable simulation state, replaceable geometry and ScalaFX rendering.
-  *
-  * The controller owns UI/runtime mutability. The physical engine itself remains
-  * independent from ScalaFX and from any concrete pipe shape.
-  */
+ *
+ * The controller owns UI/runtime mutability. The physical engine itself remains
+ * independent of ScalaFX and from any concrete pipe shape.
+ */
 final class SimulationController(
-    engine: SimulationEngine,
-    geometryFactory: GeometryFactory,
-    renderer: SimulationRenderer,
-    metricsCalculator: FlowMetricsCalculator,
-    initialSimulation: SimulationParameters,
-    initialGeometry: GeometryParameters,
-    initialVisualization: VisualizationParameters
-) {
+                                  engine: SimulationEngine,
+                                  geometryFactory: GeometryFactory,
+                                  renderer: SimulationRenderer,
+                                  metricsCalculator: FlowMetricsCalculator,
+                                  initialSimulation: SimulationParameters,
+                                  initialGeometry: GeometryParameters,
+                                  initialVisualization: VisualizationParameters
+                                ) {
   private var simulationValue = initialSimulation
   private var geometryParametersValue = initialGeometry
   private var visualizationValue = initialVisualization

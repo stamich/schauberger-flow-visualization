@@ -11,13 +11,13 @@ import scalafx.scene.paint.Color
 final class VectorFieldRenderer(fieldSampler: SecondaryFlowFieldSampler) {
   /** Samples the local field and renders compact arrows in world-oriented cross-section coordinates. */
   def render(
-      gc: GraphicsContext,
-      geometry: PipeGeometry,
-      transform: ViewportTransform,
-      axialPosition: Double,
-      parameters: SecondaryFlowParameters,
-      resolution: Int
-  ): Unit = {
+              gc: GraphicsContext,
+              geometry: PipeGeometry,
+              transform: ViewportTransform,
+              axialPosition: Double,
+              parameters: SecondaryFlowParameters,
+              resolution: Int
+            ): Unit = {
     if (!parameters.enabled) return
     val frame = geometry.localFrameAt(geometry.centerLinePosition(axialPosition))
     val samples = fieldSampler.sample(geometry, axialPosition, parameters, resolution)

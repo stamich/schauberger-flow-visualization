@@ -9,9 +9,9 @@ import scalafx.scene.layout.VBox
 
 /** Controls particle population, primary flow settings and selectable vortex profile. */
 final class FlowControlPane(
-    controller: SimulationController,
-    onStatusRefresh: () => Unit
-) extends VBox {
+                             controller: SimulationController,
+                             onStatusRefresh: () => Unit
+                           ) extends VBox {
 
   spacing = 6.0
   padding = Insets(8.0)

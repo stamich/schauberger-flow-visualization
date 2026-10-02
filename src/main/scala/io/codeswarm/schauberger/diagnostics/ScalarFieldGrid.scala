@@ -6,7 +6,7 @@ final case class ScalarFieldGrid(resolution: Int, cells: Vector[ScalarFieldCell]
   require(cells.size == resolution * resolution)
 
   /** Finite values belonging to cells inside the active cross-section. */
-  def insideValues: Vector[Double] = cells.collect { case c if c.inside && c.value.isFinite => c.value }
+  private def insideValues: Vector[Double] = cells.collect { case c if c.inside && c.value.isFinite => c.value }
 
   /** Returns minimum and maximum finite inside values, or zeros for an empty grid. */
   def range: FieldRange = FieldRange.from(insideValues)

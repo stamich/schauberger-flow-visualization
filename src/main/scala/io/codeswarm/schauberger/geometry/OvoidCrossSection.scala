@@ -4,24 +4,24 @@ import io.codeswarm.schauberger.geometry.ovoid.{ExactOvoidGeometryKernel, Lookup
 import io.codeswarm.schauberger.math.Vector2D
 
 /** Smooth asymmetric ovoid represented by an angle-dependent polar radius.
-  *
-  * Milestone 0.6 delegates boundary evaluation to a pluggable kernel. Exact
-  * mode keeps analytic equations for validation while lookup mode precomputes
-  * the expensive radius/normal data and interpolates it during simulation.
-  *
-  * @param width full local width of the ovoid
-  * @param height full local height of the ovoid
-  * @param asymmetry vertical polar-radius asymmetry coefficient
-  * @param evaluationMode exact or lookup boundary evaluation
-  * @param lookupSamples number of samples used by lookup mode
-  */
+ *
+ * Milestone 0.6 delegates boundary evaluation to a pluggable kernel. Exact
+ * mode keeps analytic equations for validation while lookup mode precomputes
+ * the expensive radius/normal data and interpolates it during simulation.
+ *
+ * @param width          full local width of the ovoid
+ * @param height         full local height of the ovoid
+ * @param asymmetry      vertical polar-radius asymmetry coefficient
+ * @param evaluationMode exact or lookup boundary evaluation
+ * @param lookupSamples  number of samples used by lookup mode
+ */
 final case class OvoidCrossSection(
-    width: Double,
-    height: Double,
-    asymmetry: Double,
-    evaluationMode: GeometryEvaluationMode = GeometryEvaluationMode.Lookup,
-    lookupSamples: Int = 1024
-) extends CrossSectionShape {
+                                    width: Double,
+                                    height: Double,
+                                    asymmetry: Double,
+                                    evaluationMode: GeometryEvaluationMode = GeometryEvaluationMode.Lookup,
+                                    lookupSamples: Int = 1024
+                                  ) extends CrossSectionShape {
   require(width > 0.0 && height > 0.0)
   require(asymmetry >= -0.35 && asymmetry <= 0.35)
   require(lookupSamples >= 32)

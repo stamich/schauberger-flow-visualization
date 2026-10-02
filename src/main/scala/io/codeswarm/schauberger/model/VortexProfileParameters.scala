@@ -12,23 +12,23 @@ case object SolidBodyParameters extends VortexProfileParameters {
 }
 
 /** Rankine vortex parameters.
-  *
-  * @param coreRadiusRatio core radius divided by the characteristic pipe radius
-  */
+ *
+ * @param coreRadiusRatio core radius divided by the characteristic pipe radius
+ */
 final case class RankineParameters(coreRadiusRatio: Double) extends VortexProfileParameters {
   require(coreRadiusRatio > 0.0 && coreRadiusRatio <= 1.0)
   override val id: String = "rankine"
 }
 
 /** Lamb-Oseen vortex parameters.
-  *
-  * @param circulation dimensionless circulation multiplier applied to the base angular scale
-  * @param coreRadiusRatio viscous-core radius divided by the characteristic pipe radius
-  */
+ *
+ * @param circulation     dimensionless circulation multiplier applied to the base angular scale
+ * @param coreRadiusRatio viscous-core radius divided by the characteristic pipe radius
+ */
 final case class LambOseenParameters(
-    circulation: Double,
-    coreRadiusRatio: Double
-) extends VortexProfileParameters {
+                                      circulation: Double,
+                                      coreRadiusRatio: Double
+                                    ) extends VortexProfileParameters {
   require(circulation >= 0.0)
   require(coreRadiusRatio > 0.0 && coreRadiusRatio <= 1.0)
   override val id: String = "lamb-oseen"

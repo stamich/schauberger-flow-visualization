@@ -3,11 +3,11 @@ package io.codeswarm.schauberger.diagnostics
 import io.codeswarm.schauberger.math.{Vector2D, Vector3D}
 
 /** Lightweight immutable uniform-grid index for local cross-section particle samples. */
-final class CrossSectionSpatialIndex private (
-    radius: Double,
-    binsPerAxis: Int,
-    buckets: Map[Int, Vector[(Vector2D, Vector3D)]]
-) {
+final class CrossSectionSpatialIndex private(
+                                              radius: Double,
+                                              binsPerAxis: Int,
+                                              buckets: Map[Int, Vector[(Vector2D, Vector3D)]]
+                                            ) {
   private val span = 2.0 * radius
   private val cellSize = span / binsPerAxis.toDouble
 
@@ -44,10 +44,12 @@ object CrossSectionSpatialIndex {
     require(radius > 0.0)
     require(binsPerAxis >= 2)
     val cellSize = 2.0 * radius / binsPerAxis.toDouble
+
     def coord(value: Double): Int = {
       val raw = math.floor((value + radius) / cellSize).toInt
       math.max(0, math.min(binsPerAxis - 1, raw))
     }
+
     val grouped = samples.groupBy { case (position, _) => coord(position.y) * binsPerAxis + coord(position.x) }
     new CrossSectionSpatialIndex(radius, binsPerAxis, grouped)
   }

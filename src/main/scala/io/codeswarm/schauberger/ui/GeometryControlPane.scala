@@ -10,9 +10,9 @@ import scalafx.scene.layout.VBox
 
 /** Controls pipe cross-section, twist and ovoid evaluation strategy. */
 final class GeometryControlPane(
-    controller: SimulationController,
-    onStatusRefresh: () => Unit
-) extends VBox {
+                                 controller: SimulationController,
+                                 onStatusRefresh: () => Unit
+                               ) extends VBox {
 
   spacing = 6.0
   padding = Insets(8.0)

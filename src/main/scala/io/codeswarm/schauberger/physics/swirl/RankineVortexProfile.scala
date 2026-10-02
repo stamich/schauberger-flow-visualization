@@ -1,9 +1,9 @@
 package io.codeswarm.schauberger.physics.swirl
 
 /** Rankine vortex combining a solid-body core and free-vortex exterior.
-  *
-  * @param coreRadiusRatio core radius divided by characteristic pipe radius
-  */
+ *
+ * @param coreRadiusRatio core radius divided by characteristic pipe radius
+ */
 final case class RankineVortexProfile(coreRadiusRatio: Double) extends SwirlProfile {
   require(coreRadiusRatio > 0.0 && coreRadiusRatio <= 1.0)
 

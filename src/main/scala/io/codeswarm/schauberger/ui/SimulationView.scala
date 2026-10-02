@@ -8,9 +8,9 @@ import scalafx.scene.layout.{BorderPane, HBox}
 
 /** Main ScalaFX composition containing status, Canvas and milestone 0.6 controls. */
 final class SimulationView(
-    canvas: Canvas,
-    controller: SimulationController
-) extends BorderPane {
+                            canvas: Canvas,
+                            controller: SimulationController
+                          ) extends BorderPane {
   private val fpsLabel = new Label("FPS: --")
   private val stateLabel = new Label("Running")
   private val geometryLabel = new Label("Geometry: --")

@@ -7,6 +7,7 @@ import org.scalatestplus.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class GeometryFactorySpec extends AnyFunSuite {
   private val factory=new GeometryFactory
+
   test("factory creates all milestone geometries") {
     val base=GeometryParameters.Default
     assert(factory.create(base.copy(geometryType=GeometryType.Circular)).isInstanceOf[StraightPipe])

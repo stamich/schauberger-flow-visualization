@@ -4,20 +4,20 @@ import io.codeswarm.schauberger.diagnostics.FieldType
 
 /** Render-only settings kept separate from physical simulation parameters. */
 final case class VisualizationParameters(
-    viewMode: ViewMode,
-    trailLength: Int,
-    trailDurationSeconds: Double,
-    trailSampleEveryFrames: Int,
-    crossSectionFraction: Double,
-    crossSectionSliceHalfWidth: Double,
-    showParticles: Boolean,
-    showTrails: Boolean,
-    showSecondaryVectors: Boolean,
-    vectorFieldResolution: Int,
-    showHeatMap: Boolean,
-    heatMapField: FieldType,
-    heatMapResolution: Int
-) {
+                                          viewMode: ViewMode,
+                                          trailLength: Int,
+                                          trailDurationSeconds: Double,
+                                          trailSampleEveryFrames: Int,
+                                          crossSectionFraction: Double,
+                                          crossSectionSliceHalfWidth: Double,
+                                          showParticles: Boolean,
+                                          showTrails: Boolean,
+                                          showSecondaryVectors: Boolean,
+                                          vectorFieldResolution: Int,
+                                          showHeatMap: Boolean,
+                                          heatMapField: FieldType,
+                                          heatMapResolution: Int
+                                        ) {
   require(trailLength >= 0)
   require(trailDurationSeconds >= 0.0)
   require(trailSampleEveryFrames > 0)

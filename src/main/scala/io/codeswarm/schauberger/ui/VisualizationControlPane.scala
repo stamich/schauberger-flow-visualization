@@ -9,9 +9,9 @@ import scalafx.scene.layout.VBox
 
 /** Controls view mode, fading trails, slice position and vector overlay. */
 final class VisualizationControlPane(
-    controller: SimulationController,
-    onStatusRefresh: () => Unit
-) extends VBox {
+                                      controller: SimulationController,
+                                      onStatusRefresh: () => Unit
+                                    ) extends VBox {
   spacing = 6.0
   padding = Insets(8.0)
 
@@ -25,9 +25,15 @@ final class VisualizationControlPane(
   private val sliceField = new NumericSliderField("Cross-section x:", 0.0, 1.0, controller.visualizationParameters.crossSectionFraction, 0.25, 2, onValueChanged = value => update(controller.visualizationParameters.copy(crossSectionFraction = value)))
   private val vectorResolutionField = new NumericSliderField("Vector grid:", 5.0, 31.0, controller.visualizationParameters.vectorFieldResolution, 5.0, 0, integerValue = true, onValueChanged = value => update(controller.visualizationParameters.copy(vectorFieldResolution = value.toInt)))
 
-  private val showParticles = new CheckBox("Show particles") { selected = controller.visualizationParameters.showParticles }
-  private val showTrails = new CheckBox("Show trails") { selected = controller.visualizationParameters.showTrails }
-  private val showVectors = new CheckBox("Show secondary vector field") { selected = controller.visualizationParameters.showSecondaryVectors }
+  private val showParticles = new CheckBox("Show particles") {
+    selected = controller.visualizationParameters.showParticles
+  }
+  private val showTrails = new CheckBox("Show trails") {
+    selected = controller.visualizationParameters.showTrails
+  }
+  private val showVectors = new CheckBox("Show secondary vector field") {
+    selected = controller.visualizationParameters.showSecondaryVectors
+  }
 
   children = Seq(
     new Label("Visualization"), new Label("View:"), viewCombo,

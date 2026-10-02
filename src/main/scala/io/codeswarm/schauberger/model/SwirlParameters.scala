@@ -2,11 +2,11 @@ package io.codeswarm.schauberger.model
 
 /** Parameters controlling tangential swirl around the local pipe tangent. */
 final case class SwirlParameters(
-    angularVelocity: Double,
-    response: Double,
-    rotationDirection: RotationDirection,
-    profile: VortexProfileParameters
-) {
+                                  angularVelocity: Double,
+                                  response: Double,
+                                  rotationDirection: RotationDirection,
+                                  profile: VortexProfileParameters
+                                ) {
   require(angularVelocity >= 0.0)
   require(response >= 0.0)
 }

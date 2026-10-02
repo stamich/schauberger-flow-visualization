@@ -3,9 +3,9 @@ package io.codeswarm.schauberger.geometry
 import io.codeswarm.schauberger.math.Vector2D
 
 /** Circular cross-section retained as the milestone 0.1/0.2 baseline.
-  *
-  * @param radius circle radius in simulation units
-  */
+ *
+ * @param radius circle radius in simulation units
+ */
 final case class CircularCrossSection(radius: Double) extends CrossSectionShape {
   require(radius > 0.0)
 

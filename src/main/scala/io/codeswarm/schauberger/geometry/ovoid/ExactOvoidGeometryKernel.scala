@@ -5,10 +5,10 @@ import io.codeswarm.schauberger.math.Vector2D
 
 /** Exact analytic implementation of the ovoid boundary equations. */
 final class ExactOvoidGeometryKernel(
-    semiWidth: Double,
-    semiHeight: Double,
-    asymmetry: Double
-) extends OvoidGeometryKernel {
+                                      semiWidth: Double,
+                                      semiHeight: Double,
+                                      asymmetry: Double
+                                    ) extends OvoidGeometryKernel {
   require(semiWidth > 0.0 && semiHeight > 0.0)
 
   /** Evaluates the analytic ovoid radius. */

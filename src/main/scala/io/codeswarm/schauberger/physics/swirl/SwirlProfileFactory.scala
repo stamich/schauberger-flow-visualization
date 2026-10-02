@@ -4,10 +4,10 @@ import io.codeswarm.schauberger.model.{LambOseenParameters, RankineParameters, S
 import scala.collection.concurrent.TrieMap
 
 /** Centralizes mapping from immutable profile parameters to profile strategies.
-  *
-  * A small concurrent cache avoids allocating one profile object per particle
-  * update while keeping all type selection in one place.
-  */
+ *
+ * A small concurrent cache avoids allocating one profile object per particle
+ * update while keeping all type selection in one place.
+ */
 final class SwirlProfileFactory {
   private val cache = TrieMap.empty[VortexProfileParameters, SwirlProfile]
 

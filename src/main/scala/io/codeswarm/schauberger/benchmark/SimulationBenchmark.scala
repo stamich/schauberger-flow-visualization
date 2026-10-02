@@ -18,23 +18,23 @@ object SimulationBenchmark {
 
   /** Complete configuration for one simulation benchmark scenario. */
   private final case class Scenario(
-      name: String,
-      geometry: PipeGeometry,
-      profile: VortexProfileParameters,
-      secondaryEnabled: Boolean
-  )
+                                     name: String,
+                                     geometry: PipeGeometry,
+                                     profile: VortexProfileParameters,
+                                     secondaryEnabled: Boolean
+                                   )
 
   /** Statistical summary for one scenario/population pair. */
   private final case class Result(
-      scenario: String,
-      particles: Int,
-      stepsPerIteration: Int,
-      medianMs: Double,
-      p95Ms: Double,
-      minMs: Double,
-      maxMs: Double,
-      particleUpdatesPerSecond: Double
-  )
+                                   scenario: String,
+                                   particles: Int,
+                                   stepsPerIteration: Int,
+                                   medianMs: Double,
+                                   p95Ms: Double,
+                                   minMs: Double,
+                                   maxMs: Double,
+                                   particleUpdatesPerSecond: Double
+                                 )
 
   /** Summary for one secondary-field sampling resolution. */
   private final case class FieldResult(resolution: Int, samples: Int, medianMs: Double, p95Ms: Double)
@@ -44,11 +44,11 @@ object SimulationBenchmark {
 
   /** Accuracy summary for one lookup table size against the exact kernel. */
   private final case class AccuracyResult(
-      samples: Int,
-      maxRelativeRadiusError: Double,
-      meanRelativeRadiusError: Double,
-      maxNormalAngleErrorDegrees: Double
-  )
+                                           samples: Int,
+                                           maxRelativeRadiusError: Double,
+                                           meanRelativeRadiusError: Double,
+                                           maxNormalAngleErrorDegrees: Double
+                                         )
 
   /** Runs flow, field-sampling, geometry-context and lookup-accuracy benchmark groups. */
   def main(args: Array[String]): Unit = {
@@ -67,7 +67,8 @@ object SimulationBenchmark {
     )
 
     val counts = Vector(1000, 10000)
-    val results = for { scenario <- scenarios; count <- counts } yield runCase(scenario, count)
+    val results = for {scenario <- scenarios
+                       count <- counts} yield runCase(scenario, count)
     val stressResults = Vector(
       runCase(scenarios.head, 50000),
       runCase(scenarios.last, 50000)
@@ -116,14 +117,20 @@ object SimulationBenchmark {
     var warmup = 0
     while (warmup < WarmupIterations) {
       var s = 0
-      while (s < steps) { state = engine.step(state, parameters, scenario.geometry, parameters.fixedTimeStep); s += 1 }
+      while (s < steps) {
+        state = engine.step(state, parameters, scenario.geometry, parameters.fixedTimeStep)
+        s += 1
+      }
       warmup += 1
     }
 
     val times = Vector.tabulate(MeasurementIterations) { _ =>
       val started = System.nanoTime()
       var s = 0
-      while (s < steps) { state = engine.step(state, parameters, scenario.geometry, parameters.fixedTimeStep); s += 1 }
+      while (s < steps) {
+        state = engine.step(state, parameters, scenario.geometry, parameters.fixedTimeStep)
+        s += 1
+      }
       (System.nanoTime() - started).toDouble / 1_000_000.0
     }.sorted
 
@@ -157,10 +164,16 @@ object SimulationBenchmark {
     val count = 500000
     val particle = Particle(1L, geometry.fromLocalCrossSection(geometry.length * 0.5, geometry.crossSection.boundaryPoint(0.7) * 0.6), Vector3D.Zero)
     var warmup = 0
-    while (warmup < 50000) { calculator.calculate(particle, geometry); warmup += 1 }
+    while (warmup < 50000) {
+      calculator.calculate(particle, geometry)
+      warmup += 1
+    }
     val started = System.nanoTime()
     var i = 0
-    while (i < count) { calculator.calculate(particle, geometry); i += 1 }
+    while (i < count) {
+      calculator.calculate(particle, geometry)
+      i += 1
+    }
     val elapsedSeconds = (System.nanoTime() - started).toDouble / 1_000_000_000.0
     GeometryResult(name, count, elapsedSeconds * 1000.0, count / elapsedSeconds)
   }
@@ -199,12 +212,12 @@ object SimulationBenchmark {
 
   /** Writes dependency-free JSON for milestone-to-milestone comparison. */
   private def writeJson(
-      results: Vector[Result],
-      field: Vector[FieldResult],
-      geometry: Vector[GeometryResult],
-      accuracy: Vector[AccuracyResult],
-      path: Path
-  ): Unit = {
+                         results: Vector[Result],
+                         field: Vector[FieldResult],
+                         geometry: Vector[GeometryResult],
+                         accuracy: Vector[AccuracyResult],
+                         path: Path
+                       ): Unit = {
     Option(path.getParent).foreach(parent => Files.createDirectories(parent))
     val resultJson = results.map { r =>
       f"""    {"scenario":"${r.scenario}","particles":${r.particles},"stepsPerIteration":${r.stepsPerIteration},"medianMs":${r.medianMs}%.3f,"p95Ms":${r.p95Ms}%.3f,"minMs":${r.minMs}%.3f,"maxMs":${r.maxMs}%.3f,"particleUpdatesPerSecond":${r.particleUpdatesPerSecond}%.3f}"""
@@ -212,7 +225,8 @@ object SimulationBenchmark {
     val fieldJson = field.map(r => f"""    {"resolution":${r.resolution},"samples":${r.samples},"medianMs":${r.medianMs}%.3f,"p95Ms":${r.p95Ms}%.3f}""").mkString(",\n")
     val geometryJson = geometry.map(r => f"""    {"geometry":"${r.name}","iterations":${r.iterations},"elapsedMs":${r.elapsedMs}%.3f,"contextsPerSecond":${r.contextsPerSecond}%.3f}""").mkString(",\n")
     val accuracyJson = accuracy.map(r => f"""    {"samples":${r.samples},"maxRelativeRadiusError":${r.maxRelativeRadiusError}%.8f,"meanRelativeRadiusError":${r.meanRelativeRadiusError}%.8f,"maxNormalAngleErrorDegrees":${r.maxNormalAngleErrorDegrees}%.6f}""").mkString(",\n")
-    val json = s"""{
+    val json =
+      s"""{
   "version": "0.6.0",
   "warmupIterations": $WarmupIterations,
   "measurementIterations": $MeasurementIterations,

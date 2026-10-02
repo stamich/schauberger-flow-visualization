@@ -6,7 +6,7 @@ import io.codeswarm.schauberger.math.Vector2D
 /** Immutable periodic lookup table for fast ovoid boundary evaluation.
   *
   * The table stores exact samples over `[0, 2π)` and linearly interpolates
-  * radius and normal between neighbouring entries. Normal interpolation is
+  * radius and normal between neighboring entries. Normal interpolation is
   * renormalized to keep a unit direction.
   */
 final class OvoidBoundaryLookup private (val samples: Vector[OvoidBoundarySample]) {
@@ -25,7 +25,7 @@ final class OvoidBoundaryLookup private (val samples: Vector[OvoidBoundarySample
   /** Returns interpolated radius and normal while performing angle lookup once. */
   def radiusAndNormalAt(angle: Double): (Double, Vector2D) = interpolate(angle)
 
-  /** Maps angle to two neighbouring periodic samples and interpolates them. */
+  /** Maps angle to two neighboring periodic samples and interpolates them. */
   private def interpolate(angle: Double): (Double, Vector2D) = {
     val normalized = {
       val raw = angle % twoPi

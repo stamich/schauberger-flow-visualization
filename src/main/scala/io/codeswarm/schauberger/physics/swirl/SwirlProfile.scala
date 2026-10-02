@@ -4,8 +4,8 @@ package io.codeswarm.schauberger.physics.swirl
 trait SwirlProfile {
   /** Returns the target tangential speed at `radialDistance`. */
   def tangentialVelocity(
-      radialDistance: Double,
-      characteristicRadius: Double,
-      angularVelocity: Double
-  ): Double
+                          radialDistance: Double,
+                          characteristicRadius: Double,
+                          angularVelocity: Double
+                        ): Double
 }

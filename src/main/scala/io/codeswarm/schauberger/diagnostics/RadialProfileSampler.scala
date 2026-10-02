@@ -7,10 +7,10 @@ import io.codeswarm.schauberger.physics.swirl.SwirlProfileFactory
 final class RadialProfileSampler(profileFactory: SwirlProfileFactory) {
   /** Samples radii from zero through the characteristic pipe radius. */
   def sample(
-      parameters: SwirlParameters,
-      characteristicRadius: Double,
-      sampleCount: Int = 100
-  ): VortexProfileDiagnostics = {
+              parameters: SwirlParameters,
+              characteristicRadius: Double,
+              sampleCount: Int = 100
+            ): VortexProfileDiagnostics = {
     require(characteristicRadius > 0.0)
     require(sampleCount >= 2)
     val profile = profileFactory.create(parameters.profile)

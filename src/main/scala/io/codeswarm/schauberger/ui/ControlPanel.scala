@@ -5,10 +5,10 @@ import scalafx.scene.control.Button
 import scalafx.scene.layout.{HBox, VBox}
 
 /** Composite milestone 0.6 control panel built from focused sub-panes.
-  *
-  * Every numeric slider is paired with editable numeric input through
-  * [[NumericSliderField]].
-  */
+ *
+ * Every numeric slider is paired with editable numeric input through
+ * [[NumericSliderField]].
+ */
 final class ControlPanel(controller: SimulationController, onStatusRefresh: () => Unit) extends VBox {
   spacing = 8.0
   padding = Insets(8.0)
@@ -17,8 +17,12 @@ final class ControlPanel(controller: SimulationController, onStatusRefresh: () =
     spacing = 10.0
     alignment = Pos.CenterLeft
     children = Seq(
-      new Button("Start") { onAction = _ => controller.start() },
-      new Button("Pause") { onAction = _ => controller.pause() },
+      new Button("Start") {
+        onAction = _ => controller.start()
+      },
+      new Button("Pause") {
+        onAction = _ => controller.pause()
+      },
       new Button("Reset") {
         onAction = _ => {
           controller.reset()
