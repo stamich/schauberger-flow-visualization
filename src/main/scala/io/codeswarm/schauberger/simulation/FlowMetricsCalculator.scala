@@ -7,10 +7,10 @@ import io.codeswarm.schauberger.physics.secondary.SecondaryFlowModel
 
 /** Computes geometry-aware aggregate diagnostics without changing simulation state. */
 final class FlowMetricsCalculator(
-    secondaryFlowModel: SecondaryFlowModel,
-    velocityDecomposer: VelocityDecomposer = new VelocityDecomposer,
-    geometryContextCalculator: GeometryContextCalculator = new DefaultGeometryContextCalculator
-) {
+                                   secondaryFlowModel: SecondaryFlowModel,
+                                   velocityDecomposer: VelocityDecomposer = new VelocityDecomposer,
+                                   geometryContextCalculator: GeometryContextCalculator = new DefaultGeometryContextCalculator
+                                 ) {
   /** Calculates axial, swirl, occupancy and secondary-flow diagnostics. */
   def calculate(state: SimulationState, geometry: PipeGeometry, parameters: SimulationParameters): FlowMetrics = {
     if (state.particles.isEmpty) FlowMetrics.Zero

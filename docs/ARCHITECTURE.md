@@ -1,85 +1,102 @@
-# Architecture — milestone 0.5
+# Architecture — milestone 0.6
 
 ## Purpose
 
-Milestone 0.5 adds flow diagnostics while reducing repeated geometry work discovered by the 0.4 benchmark.
+Milestone 0.6 keeps the 0.5 separation between physics, diagnostics and ScalaFX while optimizing the ovoid hot path and making the tangential vortex model pluggable.
 
-## Dependency direction
+## Package layout
 
 ```text
-ScalaFX UI
-  ↓
-SimulationController
-  ↓
-SimulationEngine
+io.codeswarm.schauberger
+├── application
+├── benchmark
+├── diagnostics
+├── geometry
+│   └── ovoid
+├── math
+├── model
+├── physics
+│   ├── secondary
+│   └── swirl
+├── simulation
+├── ui
+└── visualization
+```
+
+## Physics pipeline
+
+```text
+Particle
   ↓
 GeometryContextCalculator
   ↓
 ParticleGeometryContext
   ↓
 ParticleFlowContext
-  ↓
-CompositeFlowForce
   ├── AxialFlowForce
   ├── SwirlForce
   ├── SecondaryFlowForce
   └── WallRepulsionForce
+  ↓
+CompositeFlowForce
+  ↓
+SemiImplicitEulerIntegrator
+  ↓
+PipeBoundaryHandler
 ```
 
-Physics and diagnostics do not import ScalaFX.
+Local frame, local position, boundary distance, inward normal, twist angle and twist rate are computed once per particle step and reused by all forces.
 
-## Shared geometry context
+## Ovoid kernel
 
-For each particle, `SimulationEngine` asks `GeometryContextCalculator` for exactly one context before force calculation. The context contains center-line location, local cross-section position, local frame, signed wall distance, inward normal and twist metadata.
+```text
+OvoidCrossSection
+       ↓
+OvoidGeometryKernel
+   ┌───────┴────────┐
+   ↓                ↓
+Exact            Lookup
+analytic      OvoidBoundaryLookup
+```
 
-This prevents each force from independently repeating `toLocalCrossSection`, `localFrameAt`, `signedDistance` and normal calculations.
+`ExactOvoidGeometryKernel` is the correctness reference. `LookupOvoidGeometryKernel` is the default runtime implementation. `OvoidBoundaryLookup` precomputes angle, radius, radius derivative and inward normal and performs periodic linear interpolation.
 
-## Ovoid geometry optimization
+## Vortex profiles
 
-`OvoidGeometryMath` computes:
+```text
+SwirlParameters.profile
+       ↓
+VortexProfileParameters
+       ↓
+SwirlProfileFactory
+  ┌────┼──────────┐
+  ↓    ↓          ↓
+Solid Rankine Lamb-Oseen
+       ↓
+   SwirlForce
+```
 
-- polar radius,
-- radius derivative,
-- boundary point,
-- analytic inward normal.
+Only `SwirlProfileFactory` maps profile ADTs to concrete strategies. The factory caches strategies by immutable parameter value to avoid per-particle allocations.
 
-The previous finite-difference normal required multiple signed-distance calls. The analytic normal requires only one polar-angle evaluation plus closed-form derivative calculations.
+## Diagnostics
 
-## Local frame
-
-`LocalFrame` owns:
-
-- origin,
-- tangent,
-- normal,
-- binormal,
-- `Rotation2D`.
-
-`Rotation2D` caches angle, sine and cosine, and provides forward/inverse 2D transforms.
-
-## Diagnostics pipeline
+The 0.5 diagnostics pipeline is preserved:
 
 ```text
 SimulationState
   ↓
-CrossSectionVelocityFieldSampler
+CrossSectionSpatialIndex
   ↓
-VectorFieldGrid
+CrossSectionVelocityFieldSampler
   ├── ScalarFieldCalculator
-  │     ├── velocity magnitude
-  │     ├── axial velocity
-  │     ├── tangential velocity
-  │     └── secondary velocity
   └── VorticityFieldCalculator
-        ↓
-ScalarFieldGrid
   ↓
 HeatMapRenderer
 ```
 
-The sampler interpolates particle velocity around the selected physical axial slice. Diagnostics are render/read-only and never feed back into the physics engine.
+0.6 adds `RadialProfileSampler`, which samples an analytic vortex profile independently of particles and reports peak tangential velocity and normalized peak radius.
 
-## UI decomposition
+## UI
 
 ```text
 ControlPanel
@@ -89,28 +106,10 @@ ControlPanel
 └── DiagnosticsControlPane
 ```
 
-Every numeric slider is implemented through `NumericSliderField`, which pairs ScalaFX `Slider` and `TextField` controls with pure validation in `NumericValueCodec`.
+`FlowControlPane` adds a profile selector and profile-specific numeric controls. `GeometryControlPane` adds Exact/Lookup selection and lookup table resolution. Every slider still uses `NumericSliderField`, so each value can also be typed manually.
 
-## Benchmark architecture
+## Benchmarks
 
-The 0.5 benchmark deliberately runs outside JavaFX. It contains three groups:
+The application benchmark measures complete simulation scenarios after warm-up and repeated measurements. The geometry section compares exact and lookup context throughput. The accuracy section compares lookup resolutions 256/512/1024/2048 against exact equations.
 
-1. particle simulation scenarios,
-2. secondary vector-field sampling,
-3. geometry-context microbenchmarks.
-
-Warm-up and repeated measurements reduce the JIT bias visible in the 0.4 results. Median and p95 values are persisted to JSON.
-
-## CI
-
-Normal CI executes compilation and tests. Benchmarks are isolated in a manual workflow so performance runs do not make every pull request slow or noisy.
-
-## Extension points
-
-The 0.5 architecture prepares the project for:
-
-- Rankine and Lamb–Oseen swirl profiles,
-- additional vorticity/pressure diagnostics,
-- spatial indexing for larger particle populations,
-- JMH benchmarks,
-- comparison mode between multiple flow profiles.
+JMH is reserved for microbenchmarks of exact-vs-lookup geometry kernels and the three vortex profile functions.

@@ -9,11 +9,11 @@ import io.codeswarm.schauberger.physics.secondary.SecondaryFlowModel
 final class SecondaryFlowFieldSampler(model: SecondaryFlowModel) {
   /** Returns only samples lying inside the active cross-section. */
   def sample(
-      geometry: PipeGeometry,
-      axialPosition: Double,
-      parameters: SecondaryFlowParameters,
-      resolution: Int
-  ): Vector[FieldSample] = {
+              geometry: PipeGeometry,
+              axialPosition: Double,
+              parameters: SecondaryFlowParameters,
+              resolution: Int
+            ): Vector[FieldSample] = {
     require(resolution >= 3)
     val radius = geometry.boundingRadius
     val step = (2.0 * radius) / (resolution - 1).toDouble

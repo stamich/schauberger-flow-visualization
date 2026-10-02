@@ -5,14 +5,14 @@ import io.codeswarm.schauberger.math.Vector2D
 /** Analytic helpers for the polar ovoid used by [[OvoidCrossSection]]. */
 private[geometry] object OvoidGeometryMath {
   /** Computes ellipse radius on a ray. */
-  def ellipseRadius(angle: Double, semiWidth: Double, semiHeight: Double): Double = {
+  private def ellipseRadius(angle: Double, semiWidth: Double, semiHeight: Double): Double = {
     val c = math.cos(angle)
     val s = math.sin(angle)
     1.0 / math.sqrt(c * c / (semiWidth * semiWidth) + s * s / (semiHeight * semiHeight))
   }
 
   /** Computes the derivative of ellipse radius with respect to polar angle. */
-  def ellipseRadiusDerivative(angle: Double, semiWidth: Double, semiHeight: Double): Double = {
+  private def ellipseRadiusDerivative(angle: Double, semiWidth: Double, semiHeight: Double): Double = {
     val c = math.cos(angle)
     val s = math.sin(angle)
     val q = c * c / (semiWidth * semiWidth) + s * s / (semiHeight * semiHeight)

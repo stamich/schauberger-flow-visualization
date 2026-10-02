@@ -16,7 +16,7 @@ class UniformCrossSectionParticleGeneratorSpec extends AnyFunSuite {
 
   test("same seed produces deterministic population") {
     val g = TwistedPipe(100, OvoidCrossSection(20, 30, 0.15), 1)
-    assert(new UniformCrossSectionParticleGenerator(7).generate(20, g, SimulationParameters.Default) ==
-      new UniformCrossSectionParticleGenerator(7).generate(20, g, SimulationParameters.Default))
+    assert(new UniformCrossSectionParticleGenerator(7)
+      .generate(20, g, SimulationParameters.Default) == new UniformCrossSectionParticleGenerator(7).generate(20, g, SimulationParameters.Default))
   }
 }

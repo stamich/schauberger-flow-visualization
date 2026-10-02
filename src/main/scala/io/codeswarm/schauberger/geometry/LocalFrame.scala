@@ -3,20 +3,20 @@ package io.codeswarm.schauberger.geometry
 import io.codeswarm.schauberger.math.{Vector2D, Vector3D}
 
 /** Local orthonormal frame of the pipe cross-section at one axial position.
-  *
-  * @param origin center-line point of the local cross-section
-  * @param tangent local axial unit direction
-  * @param normal first local cross-section basis vector
-  * @param binormal second local cross-section basis vector
-  * @param rotation cached cross-section rotation
-  */
+ *
+ * @param origin   center-line point of the local cross-section
+ * @param tangent  local axial unit direction
+ * @param normal   first local cross-section basis vector
+ * @param binormal second local cross-section basis vector
+ * @param rotation cached cross-section rotation
+ */
 final case class LocalFrame(
-    origin: Vector3D,
-    tangent: Vector3D,
-    normal: Vector3D,
-    binormal: Vector3D,
-    rotation: Rotation2D
-) {
+                             origin: Vector3D,
+                             tangent: Vector3D,
+                             normal: Vector3D,
+                             binormal: Vector3D,
+                             rotation: Rotation2D
+                           ) {
   /** Converts a local cross-section vector `(u,v)` to world coordinates. */
   def crossSectionVectorToWorld(local: Vector2D): Vector3D = normal * local.x + binormal * local.y
 

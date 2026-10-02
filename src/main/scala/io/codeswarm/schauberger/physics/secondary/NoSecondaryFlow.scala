@@ -8,9 +8,9 @@ import io.codeswarm.schauberger.model.SecondaryFlowParameters
 case object NoSecondaryFlow extends SecondaryFlowModel {
   /** Always returns zero local velocity. */
   override def targetVelocity(
-      localPosition: Vector2D,
-      geometry: PipeGeometry,
-      axialPosition: Double,
-      parameters: SecondaryFlowParameters
-  ): Vector2D = Vector2D.Zero
+                               localPosition: Vector2D,
+                               geometry: PipeGeometry,
+                               axialPosition: Double,
+                               parameters: SecondaryFlowParameters
+                             ): Vector2D = Vector2D.Zero
 }

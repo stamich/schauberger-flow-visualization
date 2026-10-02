@@ -5,22 +5,22 @@ import io.codeswarm.schauberger.math.Vector2D
 import io.codeswarm.schauberger.model.SecondaryFlowParameters
 
 /** Simplified two-cell cross-sectional circulation driven by local pipe twist.
-  *
-  * This is an educational vector-field model, not a Navier-Stokes solution. The
-  * field is derived from a smooth stream-function-like polynomial and attenuated
-  * close to the actual cross-section boundary.
-  */
+ *
+ * This is an educational vector-field model, not a Navier-Stokes solution. The
+ * field is derived from a smooth stream-function-like polynomial and attenuated
+ * close to the actual cross-section boundary.
+ */
 final class TwinVortexSecondaryFlow(
-    attenuation: BoundaryAttenuation = LinearBoundaryAttenuation
-) extends SecondaryFlowModel {
+                                     attenuation: BoundaryAttenuation = LinearBoundaryAttenuation
+                                   ) extends SecondaryFlowModel {
 
   /** Calculates a finite target velocity in local cross-section coordinates. */
   override def targetVelocity(
-      localPosition: Vector2D,
-      geometry: PipeGeometry,
-      axialPosition: Double,
-      parameters: SecondaryFlowParameters
-  ): Vector2D = {
+                               localPosition: Vector2D,
+                               geometry: PipeGeometry,
+                               axialPosition: Double,
+                               parameters: SecondaryFlowParameters
+                             ): Vector2D = {
     if (!parameters.enabled || parameters.strength <= 0.0) return Vector2D.Zero
 
     val twist = math.abs(geometry.twistRateAt(axialPosition))

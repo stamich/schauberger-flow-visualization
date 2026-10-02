@@ -2,8 +2,9 @@ package io.codeswarm.schauberger.simulation
 
 import io.codeswarm.schauberger.geometry.{OvoidCrossSection, TwistedPipe}
 import io.codeswarm.schauberger.model.SimulationParameters
-import io.codeswarm.schauberger.physics.{AxialFlowForce, CompositeFlowForce, SecondaryFlowForce, SolidBodySwirlProfile, SwirlForce, WallRepulsionForce}
+import io.codeswarm.schauberger.physics.{AxialFlowForce, CompositeFlowForce, SecondaryFlowForce, SwirlForce, WallRepulsionForce}
 import io.codeswarm.schauberger.physics.secondary.TwinVortexSecondaryFlow
+import io.codeswarm.schauberger.physics.swirl.SwirlProfileFactory
 import org.junit.runner.RunWith
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.junit.JUnitRunner
@@ -14,7 +15,7 @@ class SimulationEngineSpec extends AnyFunSuite {
   private val engine = new SimulationEngine(
     CompositeFlowForce(Vector(
       new AxialFlowForce,
-      new SwirlForce(new SolidBodySwirlProfile),
+      new SwirlForce(new SwirlProfileFactory),
       new SecondaryFlowForce(secondaryModel),
       new WallRepulsionForce
     )),

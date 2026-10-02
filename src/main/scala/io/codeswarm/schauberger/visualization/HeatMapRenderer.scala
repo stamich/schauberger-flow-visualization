@@ -8,18 +8,18 @@ import scalafx.scene.paint.Color
 
 /** Renders interpolated scalar flow diagnostics as a cross-section heat map. */
 final class HeatMapRenderer(
-    velocitySampler: CrossSectionVelocityFieldSampler,
-    scalarCalculator: ScalarFieldCalculator
-) {
+                             velocitySampler: CrossSectionVelocityFieldSampler,
+                             scalarCalculator: ScalarFieldCalculator
+                           ) {
   /** Samples the selected field and paints colored grid cells beneath particles. */
   def render(
-      gc: GraphicsContext,
-      state: SimulationState,
-      geometry: PipeGeometry,
-      transform: ViewportTransform,
-      axialPosition: Double,
-      visualization: VisualizationParameters
-  ): Unit = {
+              gc: GraphicsContext,
+              state: SimulationState,
+              geometry: PipeGeometry,
+              transform: ViewportTransform,
+              axialPosition: Double,
+              visualization: VisualizationParameters
+            ): Unit = {
     if (!visualization.showHeatMap) return
     val grid = velocitySampler.sample(
       state,

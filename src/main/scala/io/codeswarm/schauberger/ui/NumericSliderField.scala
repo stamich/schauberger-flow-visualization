@@ -6,21 +6,21 @@ import scalafx.scene.control.{Label, Slider, TextField}
 import scalafx.scene.layout.HBox
 
 /** Reusable numeric control combining a slider with an editable text field.
-  *
-  * Both interaction paths are synchronized. Text input is parsed on Enter or when
-  * focus leaves the field, clamped to the slider range and optionally rounded to
-  * an integer. Invalid input is discarded and the last valid value is restored.
-  */
+ *
+ * Both interaction paths are synchronized. Text input is parsed on Enter or when
+ * focus leaves the field, clamped to the slider range and optionally rounded to
+ * an integer. Invalid input is discarded and the last valid value is restored.
+ */
 final class NumericSliderField(
-    labelText: String,
-    minValue: Double,
-    maxValue: Double,
-    initialValue: Double,
-    majorTickUnitValue: Double,
-    decimals: Int,
-    integerValue: Boolean = false,
-    onValueChanged: Double => Unit
-) extends HBox {
+                                labelText: String,
+                                minValue: Double,
+                                maxValue: Double,
+                                initialValue: Double,
+                                majorTickUnitValue: Double,
+                                decimals: Int,
+                                integerValue: Boolean = false,
+                                onValueChanged: Double => Unit
+                              ) extends HBox {
 
   require(maxValue > minValue)
   require(majorTickUnitValue > 0.0)
@@ -29,7 +29,7 @@ final class NumericSliderField(
   private var internalUpdate = false
 
   /** Slider used for mouse/keyboard adjustment. */
-  val sliderControl: Slider = new Slider(minValue, maxValue, normalize(initialValue)) {
+  private val sliderControl: Slider = new Slider(minValue, maxValue, normalize(initialValue)) {
     majorTickUnit = majorTickUnitValue
     minorTickCount = 4
     showTickLabels = true
@@ -38,7 +38,7 @@ final class NumericSliderField(
   }
 
   /** Editable numeric field synchronized with [[sliderControl]]. */
-  val textControl: TextField = new TextField {
+  private val textControl: TextField = new TextField {
     text = format(normalize(initialValue))
     prefColumnCount = math.max(5, decimals + 4)
     maxWidth = 90.0
@@ -47,7 +47,9 @@ final class NumericSliderField(
   spacing = 10.0
   alignment = Pos.CenterLeft
   children = Seq(
-    new Label(labelText) { minWidth = 145.0 },
+    new Label(labelText) {
+      minWidth = 145.0
+    },
     sliderControl,
     textControl
   )

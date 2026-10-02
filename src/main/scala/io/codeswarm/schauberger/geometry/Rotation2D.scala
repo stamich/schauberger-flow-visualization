@@ -3,10 +3,10 @@ package io.codeswarm.schauberger.geometry
 import io.codeswarm.schauberger.math.Vector2D
 
 /** Precomputed two-dimensional rotation used by twisted cross-section transforms.
-  *
-  * Caching sine and cosine avoids repeating trigonometric work in several flow
-  * components during the same particle update.
-  */
+ *
+ * Caching sine and cosine avoids repeating trigonometric work in several flow
+ * components during the same particle update.
+ */
 final case class Rotation2D(angle: Double, sine: Double, cosine: Double) {
   /** Rotates a local vector counter-clockwise into the rotated frame. */
   def apply(vector: Vector2D): Vector2D =

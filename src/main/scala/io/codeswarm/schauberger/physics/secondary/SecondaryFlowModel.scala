@@ -8,9 +8,9 @@ import io.codeswarm.schauberger.model.SecondaryFlowParameters
 trait SecondaryFlowModel {
   /** Calculates target velocity in local cross-section coordinates. */
   def targetVelocity(
-      localPosition: Vector2D,
-      geometry: PipeGeometry,
-      axialPosition: Double,
-      parameters: SecondaryFlowParameters
-  ): Vector2D
+                      localPosition: Vector2D,
+                      geometry: PipeGeometry,
+                      axialPosition: Double,
+                      parameters: SecondaryFlowParameters
+                    ): Vector2D
 }

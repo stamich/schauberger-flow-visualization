@@ -19,7 +19,8 @@ class PipeBoundaryHandlerSpec extends AnyFunSuite {
 
   test("outlet particle is respawned at inlet") {
     val g = TwistedPipe(100, OvoidCrossSection(20, 30, 0.1), 1)
-    val fixed = (new PipeBoundaryHandler).handle(Particle(1, Vector3D(101, 0, 0), Vector3D.Zero), g, SimulationParameters.Default, new UniformCrossSectionParticleGenerator(1))
+    val fixed = (new PipeBoundaryHandler)
+      .handle(Particle(1, Vector3D(101, 0, 0), Vector3D.Zero), g, SimulationParameters.Default, new UniformCrossSectionParticleGenerator(1))
     assert(fixed.position.x == 0.0)
   }
 }

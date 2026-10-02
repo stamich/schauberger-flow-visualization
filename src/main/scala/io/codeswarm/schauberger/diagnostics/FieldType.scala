@@ -3,7 +3,7 @@ package io.codeswarm.schauberger.diagnostics
 /** Scalar quantity that can be rendered as a cross-section heat map. */
 sealed trait FieldType { def displayName: String }
 
-/** Supported milestone 0.5 diagnostic fields. */
+/** Supported milestone 0.6 diagnostic fields. */
 object FieldType {
   case object VelocityMagnitude extends FieldType { val displayName = "Velocity magnitude" }
   case object AxialVelocity extends FieldType { val displayName = "Axial velocity" }

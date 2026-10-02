@@ -2,11 +2,11 @@ package io.codeswarm.schauberger.model
 
 /** Parameters for geometry-induced secondary flow in the local cross-section. */
 final case class SecondaryFlowParameters(
-    enabled: Boolean,
-    strength: Double,
-    response: Double,
-    boundaryFadeDistance: Double
-) {
+                                          enabled: Boolean,
+                                          strength: Double,
+                                          response: Double,
+                                          boundaryFadeDistance: Double
+                                        ) {
   require(strength >= 0.0)
   require(response >= 0.0)
   require(boundaryFadeDistance >= 0.0)

@@ -7,18 +7,18 @@ import io.codeswarm.schauberger.model.{Particle, SimulationParameters}
 import scala.util.Random
 
 /** Deterministic rejection sampler that works with every [[PipeGeometry]] cross-section.
-  *
-  * @param seed pseudo-random seed used to keep demos, tests and benchmarks reproducible
-  */
+ *
+ * @param seed pseudo-random seed used to keep demos, tests and benchmarks reproducible
+ */
 final class UniformCrossSectionParticleGenerator(seed: Long) extends ParticleGenerator {
   private val random = new Random(seed)
 
   /** Generates exactly `count` particles distributed through the pipe volume. */
   override def generate(
-      count: Int,
-      geometry: PipeGeometry,
-      parameters: SimulationParameters
-  ): Vector[Particle] = {
+                         count: Int,
+                         geometry: PipeGeometry,
+                         parameters: SimulationParameters
+                       ): Vector[Particle] = {
     require(count > 0)
     Vector.tabulate(count) { index =>
       val x = random.nextDouble() * geometry.length
@@ -32,10 +32,10 @@ final class UniformCrossSectionParticleGenerator(seed: Long) extends ParticleGen
 
   /** Reuses an existing particle id and respawns it at x = 0 inside the current shape. */
   override def respawn(
-      particle: Particle,
-      geometry: PipeGeometry,
-      parameters: SimulationParameters
-  ): Particle =
+                        particle: Particle,
+                        geometry: PipeGeometry,
+                        parameters: SimulationParameters
+                      ): Particle =
     particle.copy(
       position = geometry.fromLocalCrossSection(0.0, randomLocalPoint(geometry)),
       velocity = Vector3D(parameters.axial.velocity, 0.0, 0.0)
