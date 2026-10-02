@@ -4,7 +4,8 @@ package io.codeswarm.schauberger.model
 final case class SwirlParameters(
     angularVelocity: Double,
     response: Double,
-    rotationDirection: RotationDirection
+    rotationDirection: RotationDirection,
+    profile: VortexProfileParameters
 ) {
   require(angularVelocity >= 0.0)
   require(response >= 0.0)
@@ -15,6 +16,7 @@ object SwirlParameters {
   val Default: SwirlParameters = SwirlParameters(
     angularVelocity = 0.55,
     response = 2.0,
-    rotationDirection = RotationDirection.CounterClockwise
+    rotationDirection = RotationDirection.CounterClockwise,
+    profile = SolidBodyParameters
   )
 }
