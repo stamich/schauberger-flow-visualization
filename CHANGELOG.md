@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.6.0-buildfix1] - 2026-10-01
+
+### Fixed
+
+- Fixed `UniformCrossSectionParticleGeneratorSpec`: the geometry predicate now validates `particle.position` instead of passing a `Particle` to `PipeGeometry.contains(Vector3D)`.
+- Removed deprecated implicit `Long` to `Double` widening conversions in `TrailBufferSpec` by using explicit `.toDouble` conversions.
+- The generator-test fix also corrects a test defect inherited from milestone 0.5.
+
+
+## [0.6.0] - 2026-10-01
+
+### Added
+- Pluggable `OvoidGeometryKernel` abstraction.
+- Exact and lookup-accelerated ovoid geometry kernels.
+- Immutable periodic `OvoidBoundaryLookup` with configurable resolution.
+- `GeometryEvaluationMode` and editable lookup resolution in the ScalaFX UI.
+- Exact-vs-lookup accuracy tests for radius and inward normals.
+- Vortex-profile parameter ADT: Solid Body, Rankine and Lamb-Oseen.
+- Rankine vortex profile with continuous solid/free-vortex transition.
+- Lamb-Oseen-inspired smooth-core vortex profile.
+- Cached `SwirlProfileFactory`.
+- Vortex-profile selector and editable profile parameters in `FlowControlPane`.
+- `RadialProfileSampler` and `VortexProfileDiagnostics`.
+- Lookup accuracy results in benchmark JSON.
+- JMH geometry-kernel and vortex-profile microbenchmarks.
+
+### Changed
+- Ovoid geometry now defaults to a 1024-sample lookup kernel.
+- `SwirlForce` resolves the selected profile through `SwirlProfileFactory`.
+- `SwirlParameters` carries typed vortex-profile configuration.
+- Application benchmark compares multiple vortex profiles and exact/lookup geometry paths.
+- Manual benchmark GitHub workflow now runs JMH after the application benchmark.
+- Project version updated to 0.6.0.
+
+### Preserved
+- 750-particle readable default.
+- Fading, age-limited particle trails.
+- Geometry-induced secondary flow.
+- Velocity/vorticity heat maps and spatial indexing.
+- Editable numeric input for every slider.
+- GitHub CI and Apache License 2.0.
+
 All notable changes to this project are documented here.
 
 ## [0.5.0] - 2026-10-01

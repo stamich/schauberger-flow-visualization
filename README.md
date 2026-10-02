@@ -4,32 +4,26 @@ Scala/ScalaFX particle visualization of helical, geometry-driven and secondary-f
 
 > This is an educational and experimental visualization. It is not a Navier–Stokes CFD solver and does not claim to validate Schauberger's broader physical theories.
 
-## Milestone 0.5.0 — Flow diagnostics and geometry performance pass
+## Milestone 0.6.0 — Optimized Geometry Kernel & Vortex Profiles
 
-Milestone 0.5 builds on 0.4.0-buildfix1 and focuses on two goals:
+Milestone 0.6 follows the benchmark conclusions from 0.5: ovoid geometry remains the dominant hotspot, while field sampling and secondary flow are already sufficiently inexpensive. The release therefore focuses on:
 
-1. calculate expensive local geometry data once per particle update,
-2. expose cross-section velocity and vorticity diagnostics as heat maps.
-
-The physical acceleration model remains:
-
-```text
-axial + swirl + secondary + wall
-```
-
-but force strategies now share a `ParticleGeometryContext`.
+1. lookup-accelerated ovoid boundary evaluation with an exact reference mode,
+2. selectable Solid Body, Rankine and Lamb-Oseen vortex profiles,
+3. improved profile and geometry benchmarks, including JMH.
 
 ## Technology
 
 - Scala 2.13.15
-- ScalaFX 21
-- JavaFX 21
-- JDK 21
-- Gradle 8.x
+- ScalaFX 21.0.0-R32
+- JavaFX / JDK 21
+- Gradle
 - ScalaTest + JUnitRunner
+- JMH Gradle plugin 0.7.3
 - GitHub Actions CI
+- Apache License 2.0
 
-## Default visualization
+## Defaults
 
 | Parameter | Default |
 |---|---:|
@@ -37,130 +31,119 @@ but force strategies now share a `ParticleGeometryContext`.
 | Axial velocity | 90.0 |
 | Angular velocity | 0.55 |
 | Swirl response | 2.0 |
+| Vortex profile | Solid Body |
 | Secondary flow | enabled |
 | Trail samples | 48 |
 | Trail lifetime | 2.0 s |
-| Heat map | enabled |
-| Heat-map field | Velocity magnitude |
 | Heat-map resolution | 30 x 30 |
-| Secondary vectors | disabled by default |
+| Ovoid evaluation | Lookup |
+| Ovoid lookup samples | 1024 |
 
-All numeric sliders retain the milestone 0.4 behavior: each slider is paired with an editable numeric field. Values can be changed by dragging, typing and pressing Enter, or leaving the field. Dot/comma decimal separators are accepted and values are clamped to the configured range.
+All numeric sliders continue to use `NumericSliderField`, so every slider also has an editable numeric text field.
 
-## Performance architecture
+## Ovoid geometry modes
 
-Milestone 0.4 revealed geometry as the dominant cost, especially for ovoid and twisted-ovoid cases. 0.5 therefore changes the per-particle pipeline to:
+### Exact
 
-```text
-Particle
-  -> GeometryContextCalculator
-  -> ParticleGeometryContext
-       - localPosition
-       - LocalFrame
-       - signedBoundaryDistance
-       - inwardNormal
-       - twistAngle
-       - twistRate
-  -> ParticleFlowContext
-  -> CompositeFlowForce
-  -> Integrator
-  -> BoundaryHandler
-```
+`ExactOvoidGeometryKernel` evaluates the analytic polar ovoid radius and inward normal for every query. It is retained as the correctness reference.
 
-`AxialFlowForce`, `SwirlForce`, `SecondaryFlowForce` and `WallRepulsionForce` reuse the same local geometry context.
+### Lookup
 
-## Analytic ovoid normals
+`LookupOvoidGeometryKernel` uses an immutable `OvoidBoundaryLookup`. Geometry construction precomputes samples containing:
 
-`OvoidCrossSection` no longer estimates its normal using finite differences. The boundary is differentiated analytically from its polar radius. This removes several repeated `signedDistance` evaluations and trigonometric calculations from near-wall particle updates.
+- angle,
+- radius,
+- radius derivative,
+- inward unit normal.
 
-`Rotation2D` additionally stores the already-calculated sine and cosine for a local twist angle.
+Runtime queries use periodic index lookup and linear interpolation. The default table size is 1024 samples.
 
-## Flow diagnostics
+The UI exposes both the evaluation mode and the lookup sample count.
 
-Cross-section mode now supports the following heat-map fields:
+### Accuracy validation
 
-- Velocity magnitude
-- Axial velocity
-- Tangential velocity
-- Secondary/cross-sectional velocity
-- Vorticity estimate
+The 0.6 benchmark compares lookup geometry with exact geometry over 10,000 validation angles and records:
 
-The diagnostic pipeline is:
+- maximum relative radius error,
+- mean relative radius error,
+- maximum normal-angle error.
+
+Tests require the default lookup resolution to stay below 0.1% radius error and 0.5 degrees normal-angle error.
+
+## Vortex profiles
+
+### Solid Body
 
 ```text
-SimulationState
-  -> CrossSectionVelocityFieldSampler
-  -> VectorFieldGrid
-  -> ScalarFieldCalculator
-  -> ScalarFieldGrid
-  -> HeatMapRenderer
+v_theta = omega * r
 ```
 
-Particle velocities are interpolated onto a regular local cross-section grid with a compact Gaussian kernel.
+This preserves the previous milestone behavior and remains the default.
 
-### Vorticity
-
-For the cross-section velocity grid, the axial vorticity component is estimated as:
+### Rankine
 
 ```text
-omega_x = d(v_z)/d(y) - d(v_y)/d(z)
+v_theta(r) = omega * r                    r <= r_core
+v_theta(r) = omega * r_core^2 / r         r >  r_core
 ```
 
-using centered finite differences. This is a cross-sectional diagnostic estimate, not a full three-dimensional CFD vorticity solution.
+The profile is continuous at the core boundary. `RankineParameters` stores the core radius as a fraction of the characteristic pipe radius.
 
-The implementation is validated by a solid-body rotation test where the analytic expectation is approximately `2 * omega`.
+### Lamb-Oseen
 
-## Rendering layers
-
-Cross-section rendering order is:
+Milestone 0.6 adds a smooth finite-core Lamb-Oseen-inspired profile:
 
 ```text
-background
-heat map
-secondary vector field (optional)
-fading trails (optional)
-particles (optional)
-pipe boundary
-legend
+v_theta ~ (1 - exp(-(r/a)^2)) / (r/a)
 ```
 
-This keeps diagnostic fields readable without forcing every overlay to be enabled at the same time.
+The circulation parameter is expressed in simulation units and is not presented as SI-calibrated circulation. The implementation is explicitly stable at `r = 0`.
 
-## Project structure
+## Profile architecture
 
 ```text
-src/main/scala/io/codeswarm/schauberger/
-├── application/
-├── benchmark/
-├── diagnostics/
-│   ├── FieldType.scala
-│   ├── FieldRange.scala
-│   ├── VectorFieldGrid.scala
-│   ├── ScalarFieldGrid.scala
-│   ├── CrossSectionVelocityFieldSampler.scala
-│   ├── ScalarFieldCalculator.scala
-│   └── VorticityFieldCalculator.scala
-├── geometry/
-│   ├── Rotation2D.scala
-│   ├── LocalFrame.scala
-│   ├── OvoidGeometryMath.scala
-│   └── ...
-├── math/
-├── model/
-├── physics/
-├── simulation/
-│   ├── ParticleGeometryContext.scala
-│   ├── GeometryContextCalculator.scala
-│   ├── ParticleFlowContext.scala
-│   └── ...
-├── ui/
-│   ├── DiagnosticsControlPane.scala
-│   ├── NumericSliderField.scala
-│   └── ...
-└── visualization/
-    ├── HeatMapRenderer.scala
-    └── ...
+SwirlParameters.profile
+       ↓
+VortexProfileParameters
+       ↓
+SwirlProfileFactory
+  ┌────┼──────────┐
+  ↓    ↓          ↓
+Solid Rankine Lamb-Oseen
+       ↓
+   SwirlForce
 ```
+
+`SwirlProfileFactory` is the only ADT-to-strategy selection point. It caches strategies by immutable parameter value to avoid allocation in the particle hot path.
+
+## Geometry architecture
+
+```text
+OvoidCrossSection
+       ↓
+OvoidGeometryKernel
+   ┌───────┴────────┐
+   ↓                ↓
+Exact            Lookup
+analytic      precomputed table
+```
+
+The rest of the physics still consumes `ParticleGeometryContext`, so force implementations remain independent of the concrete geometry kernel.
+
+## Diagnostics
+
+The 0.5 diagnostic stack is preserved:
+
+- velocity magnitude heat map,
+- axial velocity heat map,
+- tangential velocity heat map,
+- secondary velocity heat map,
+- cross-sectional vorticity estimate,
+- secondary vector field,
+- fading trails,
+- particle overlay.
+
+0.6 adds `RadialProfileSampler` and `VortexProfileDiagnostics` for sampling analytic vortex profiles without running particles.
 
 ## Build and run
 
@@ -171,56 +154,72 @@ gradle clean test
 gradle run
 ```
 
-## Benchmark
+## Application benchmark
 
 ```bash
 gradle benchmark
 ```
 
-The 0.5 benchmark adds:
-
-- 5 warm-up iterations,
-- 10 measurement iterations,
-- median and p95 timings,
-- particle updates/s,
-- field-sampling measurements,
-- a geometry-context microbenchmark for circular, ovoid and twisted-ovoid geometries.
-
-Output:
+The benchmark performs 5 warm-up iterations and 10 measurement iterations and writes:
 
 ```text
-benchmark/results/benchmark-0.5.0.json
+benchmark/results/benchmark-0.6.0.json
 ```
 
-The benchmark is designed for regression tracking. Use JMH for publication-grade microbenchmarks.
+It includes:
+
+- Solid Body / Rankine / Lamb-Oseen simulation scenarios,
+- ovoid and twisted-ovoid lookup scenarios,
+- selected 50k stress cases,
+- field-sampling measurements,
+- exact-vs-lookup geometry-context throughput,
+- lookup accuracy for 256 / 512 / 1024 / 2048 samples.
+
+## JMH
+
+```bash
+gradle jmh
+```
+
+JMH microbenchmarks compare:
+
+- exact and lookup ovoid geometry kernels,
+- Solid Body, Rankine and Lamb-Oseen profile evaluation.
+
+JMH complements, rather than replaces, the application benchmark.
 
 ## GitHub Actions
 
-Two workflows are included:
+- `.github/workflows/ci.yml` runs `gradle --no-daemon clean test` on push, pull request and manual dispatch.
+- `.github/workflows/benchmark.yml` is manually triggered. It runs tests, the application benchmark, JMH, and uploads `benchmark-0.6.0.json`.
 
-- `.github/workflows/ci.yml` — checkout, JDK 21, Gradle 8.10.2, `clean test` on push/PR/manual runs.
-- `.github/workflows/benchmark.yml` — manual benchmark run, tests first, then uploads `benchmark-0.5.0.json` as a workflow artifact.
+## Test coverage added in 0.6
 
-## Tests
+- lookup seam periodicity,
+- interpolated normal normalization,
+- exact-vs-lookup radius accuracy,
+- exact-vs-lookup normal-angle accuracy,
+- Rankine core continuity,
+- Lamb-Oseen center stability,
+- finite sampled Lamb-Oseen velocities,
+- profile factory selection and caching,
+- profile-sensitive `SwirlForce`,
+- radial profile diagnostics,
+- existing long-run containment and finite-vector invariants.
 
-The suite covers the existing 0.1–0.4 behavior and new 0.5 functionality, including:
+## Scientific scope
 
-- precomputed geometry contexts,
-- analytic ovoid normals,
-- local/world frame round trips,
-- force models using `ParticleFlowContext`,
-- vorticity validation against solid-body rotation,
-- scalar range normalization,
-- long-running geometry containment,
-- secondary flow,
-- fading trails,
-- editable numeric input parsing/clamping.
+Particles are Lagrangian markers representing elements of a modeled fluid flow; they are not literal water molecules. Units are simulation units. The swirl and secondary-flow models are designed for visualization and controlled comparison, not as a substitute for validated CFD.
+
+## Roadmap
+
+The natural next milestone is 0.7: counter-rotating / double-vortex models and direct comparison between vortex profiles inside the same geometry.
 
 ## Documentation
 
-- `README.md` — user/developer overview
+- `README.md` — project and milestone overview
 - `docs/ARCHITECTURE.md` — architecture and dependency boundaries
-- `docs/IMPLEMENTATION_TASKS.md` — detailed implementation sequence and acceptance criteria
+- `docs/IMPLEMENTATION_TASKS.md` — ordered implementation plan and acceptance criteria
 - `CHANGELOG.md` — milestone history
 
 ## License
