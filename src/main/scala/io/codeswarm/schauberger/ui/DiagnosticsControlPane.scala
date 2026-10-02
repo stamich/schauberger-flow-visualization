@@ -7,7 +7,7 @@ import scalafx.geometry.Insets
 import scalafx.scene.control.{CheckBox, ComboBox, Label}
 import scalafx.scene.layout.VBox
 
-/** Controls milestone 0.5 scalar heat maps and diagnostic overlays. */
+/** Controls milestone 0.6 scalar heat maps and diagnostic overlays. */
 final class DiagnosticsControlPane(
     controller: SimulationController,
     onStatusRefresh: () => Unit

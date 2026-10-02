@@ -6,7 +6,7 @@ import scalafx.scene.canvas.Canvas
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{BorderPane, HBox}
 
-/** Main ScalaFX composition containing status, Canvas and milestone 0.5 controls. */
+/** Main ScalaFX composition containing status, Canvas and milestone 0.6 controls. */
 final class SimulationView(
     canvas: Canvas,
     controller: SimulationController
@@ -19,18 +19,20 @@ final class SimulationView(
   private val secondaryLabel = new Label("Secondary: --")
   private val energyLabel = new Label("Secondary ratio: --")
   private val twistLabel = new Label("Twist: --")
+  private val profileLabel = new Label("Profile: --")
   private var lastTimestamp = 0L
 
   private val status = new HBox {
     spacing = 12.0
     padding = Insets(8.0, 14.0, 8.0, 14.0)
     children = Seq(
-      new Label("Schauberger Flow Visualization 0.5"),
+      new Label("Schauberger Flow Visualization 0.6"),
       fpsLabel,
       stateLabel,
       geometryLabel,
       axialLabel,
       tangentialLabel,
+      profileLabel,
       secondaryLabel,
       energyLabel,
       twistLabel
@@ -65,6 +67,7 @@ final class SimulationView(
     geometryLabel.text = s"Geometry: ${controller.geometryParameters.geometryType}"
     axialLabel.text = f"Axial: ${metrics.meanAxialVelocity}%.1f"
     tangentialLabel.text = f"Tangential: ${metrics.meanTangentialVelocity}%.1f"
+    profileLabel.text = s"Profile: ${controller.simulationParameters.swirl.profile.id}"
     secondaryLabel.text = f"Secondary: ${metrics.meanSecondaryVelocity}%.2f"
     energyLabel.text = f"Secondary ratio: ${metrics.secondaryFlowEnergyRatio * 100.0}%.1f%%"
     twistLabel.text = f"Twist rate: ${controller.geometry.twistRate}%.4f"

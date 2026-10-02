@@ -4,7 +4,7 @@ import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.Button
 import scalafx.scene.layout.{HBox, VBox}
 
-/** Composite milestone 0.5 control panel built from focused sub-panes.
+/** Composite milestone 0.6 control panel built from focused sub-panes.
   *
   * Every numeric slider is paired with editable numeric input through
   * [[NumericSliderField]].
