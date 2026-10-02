@@ -6,6 +6,7 @@ import io.codeswarm.schauberger.simulation.{DefaultGeometryContextCalculator, Pa
 
 /** Shared helpers for force tests using milestone 0.5 precomputed geometry contexts. */
 object PhysicsTestSupport {
+
   /** Builds a complete per-particle flow context. */
   def context(particle: Particle, geometry: PipeGeometry, parameters: SimulationParameters): ParticleFlowContext = {
     val flow = FlowContext(geometry, parameters)

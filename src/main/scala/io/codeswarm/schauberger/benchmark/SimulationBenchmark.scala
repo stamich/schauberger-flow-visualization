@@ -40,7 +40,8 @@ object SimulationBenchmark {
       "twisted-ovoid-swirl", "twisted-ovoid-swirl-secondary"
     )
     val counts = Vector(1000, 10000, 50000)
-    val results = for {scenario <- scenarios; count <- counts} yield runCase(scenario, count)
+    val results = for {scenario <- scenarios
+                       count <- counts} yield runCase(scenario, count)
     val fieldResults = Vector(15, 30, 60).map(runFieldCase)
     val geometryResults = Vector(
       "circular" -> StraightPipe(1000.0, CircularCrossSection(120.0)),
@@ -79,7 +80,7 @@ object SimulationBenchmark {
     while (warmup < WarmupIterations) {
       var s = 0
       while (s < steps) {
-        state = engine.step(state, parameters, geometry, parameters.fixedTimeStep);
+        state = engine.step(state, parameters, geometry, parameters.fixedTimeStep)
         s += 1
       }
       warmup += 1
@@ -89,7 +90,7 @@ object SimulationBenchmark {
       val started = System.nanoTime()
       var s = 0
       while (s < steps) {
-        state = engine.step(state, parameters, geometry, parameters.fixedTimeStep);
+        state = engine.step(state, parameters, geometry, parameters.fixedTimeStep)
         s += 1
       }
       (System.nanoTime() - started).toDouble / 1_000_000.0
@@ -127,13 +128,13 @@ object SimulationBenchmark {
     val particle = Particle(1L, geometry.fromLocalCrossSection(geometry.length * 0.5, geometry.crossSection.boundaryPoint(0.7) * 0.6), Vector3D.Zero)
     var warmup = 0
     while (warmup < 50000) {
-      calculator.calculate(particle, geometry);
+      calculator.calculate(particle, geometry)
       warmup += 1
     }
     val started = System.nanoTime()
     var i = 0
     while (i < count) {
-      calculator.calculate(particle, geometry);
+      calculator.calculate(particle, geometry)
       i += 1
     }
     val elapsedSeconds = (System.nanoTime() - started).toDouble / 1_000_000_000.0
