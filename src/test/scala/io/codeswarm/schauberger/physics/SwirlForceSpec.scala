@@ -25,7 +25,7 @@ class SwirlForceSpec extends AnyFunSuite {
 
   test("centerline particle receives no swirl") {
     val particle = Particle(1L, Vector3D(20.0, 0.0, 0.0), Vector3D.Zero)
-    val acceleration = (new SwirlForce(new SolidBodySwirlProfile)).acceleration(
+    val acceleration = new SwirlForce(new SolidBodySwirlProfile).acceleration(
       PhysicsTestSupport.context(particle, pipe, SimulationParameters.Default)
     )
     assert(acceleration.magnitude < 1e-9)

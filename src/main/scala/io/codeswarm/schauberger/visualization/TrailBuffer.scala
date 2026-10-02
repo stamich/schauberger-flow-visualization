@@ -23,8 +23,13 @@ final class TrailBuffer {
       }
     }
   }
+
   /** Immutable snapshot for one particle. */
   def points(particleId: Long): Vector[TrailSample] = samples.get(particleId).map(_.toVector).getOrElse(Vector.empty)
+
   /** Clears all visual history. */
-  def clear(): Unit = { samples.clear(); lastRecordedFrame = Long.MinValue }
+  def clear(): Unit = {
+    samples.clear()
+    lastRecordedFrame = Long.MinValue
+  }
 }
