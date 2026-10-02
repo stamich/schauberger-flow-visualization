@@ -219,7 +219,6 @@ The natural next milestone is 0.7: counter-rotating / double-vortex models and d
 
 - `README.md` — project and milestone overview
 - `docs/ARCHITECTURE.md` — architecture and dependency boundaries
-- `docs/IMPLEMENTATION_TASKS.md` — ordered implementation plan and acceptance criteria
 - `CHANGELOG.md` — milestone history
 
 ## License
