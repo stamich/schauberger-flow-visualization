@@ -89,4 +89,13 @@ class SimulationEngineSpec extends AnyFunSuite {
     assert(swirling.occupancy.outer > reference.occupancy.outer + 0.30)
     assert(swirling.meanNormalizedRadialPosition > reference.meanNormalizedRadialPosition + 0.20)
   }
+
+  test("secondary flow no longer halves the swirl") {
+    val withSecondary = swirlOnly.copy(secondaryFlow = SimulationParameters.Default.secondaryFlow)
+    val alone = metricsAfter(defaultGeometry, swirlOnly, longRun)
+    val combined = metricsAfter(defaultGeometry, withSecondary, longRun)
+    // Two independent relaxations used to leave about 53% of the swirl; one target keeps all of it.
+    assert(combined.meanAngularVelocity > 0.85 * alone.meanAngularVelocity)
+    assert(combined.meanAngularVelocity < 1.25 * alone.meanAngularVelocity)
+  }
 }
