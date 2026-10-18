@@ -15,7 +15,7 @@ repositories {
     mavenCentral()
 }
 
-val scalaVersion = "2.13.15"
+val scalaVersion = "2.13.18"
 val scalaFxVersion = "21.0.0-R32"
 val scalaTestVersion = "3.2.19"
 
@@ -43,8 +43,8 @@ jmh {
 }
 
 javafx {
-    version = "21.0.5"
-    modules("javafx.controls")
+    version = "21.0.8"
+    modules("javafx.controls", "javafx.fxml", "javafx.media")
 }
 
 application {
