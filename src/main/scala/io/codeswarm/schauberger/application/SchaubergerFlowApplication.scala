@@ -13,7 +13,7 @@ import scalafx.application.JFXApp3
 import scalafx.scene.Scene
 import scalafx.scene.canvas.Canvas
 
-/** ScalaFX entry point wiring milestone 0.6 domain components to the UI. */
+/** ScalaFX entry point wiring milestone 0.7 domain components to the UI. */
 object SchaubergerFlowApplication extends JFXApp3 {
 
   /** Constructs the application graph, shows the primary stage and starts animation. */
@@ -49,7 +49,7 @@ object SchaubergerFlowApplication extends JFXApp3 {
     val view = new SimulationView(canvas, controller)
 
     stage = new JFXApp3.PrimaryStage {
-      title = "Schauberger Flow Visualization 0.6"
+      title = "Schauberger Flow Visualization 0.7"
       scene = new Scene(1580.0, 1080.0) {
         root = view
       }

@@ -6,7 +6,7 @@ import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class DefaultParametersSpec extends AnyFunSuite {
-  test("milestone 0.6 keeps readable flow defaults") {
+  test("milestone 0.7 keeps readable flow defaults") {
     val parameters = SimulationParameters.Default
     assert(parameters.particleCount == 750)
     assert(parameters.axial.velocity == 90.0)

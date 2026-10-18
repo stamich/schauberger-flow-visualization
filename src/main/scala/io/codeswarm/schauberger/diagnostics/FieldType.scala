@@ -9,7 +9,7 @@ sealed trait FieldType {
   def signed: Boolean = false
 }
 
-/** Supported milestone 0.6 diagnostic fields. */
+/** Supported diagnostic fields. */
 object FieldType {
   case object VelocityMagnitude extends FieldType { val displayName = "Velocity magnitude" }
   case object AxialVelocity extends FieldType { val displayName = "Axial velocity" }

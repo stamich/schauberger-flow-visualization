@@ -4,8 +4,9 @@ import io.codeswarm.schauberger.model.VortexRegion
 
 /** Web colours that mark the rotation sense of particles and trails.
  *
- * Warm marks turn with the configured direction and cool marks against it,
- * matching the red and blue halves of the diverging heat-map palette.
+ * Warm marks turn with the configured direction and cool marks against it.
+ * The heat map is absolute (red counter-clockwise, blue clockwise), so the two
+ * agree for the default counter-clockwise direction.
  */
 object RotationSensePalette {
   /** Particle colour when sense colouring is off. */

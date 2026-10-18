@@ -1,6 +1,6 @@
 package io.codeswarm.schauberger.model
 
-/** Geometry choices exposed in milestone 0.6. */
+/** Geometry choices exposed in the UI. */
 sealed trait GeometryType
 
 /** Supported pipe geometry identifiers. */
