@@ -12,7 +12,8 @@ final case class SimulationParameters(
                                        secondaryFlow: SecondaryFlowParameters,
                                        wall: WallParameters,
                                        maxVelocity: Double,
-                                       fixedTimeStep: Double
+                                       fixedTimeStep: Double,
+                                       radialBalance: RadialBalanceParameters = RadialBalanceParameters.Default
                                      ) {
   require(particleCount > 0)
   require(maxVelocity > 0.0)

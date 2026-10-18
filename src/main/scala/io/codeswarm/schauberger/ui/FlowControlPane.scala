@@ -68,6 +68,11 @@ final class FlowControlPane(
     selected = controller.simulationParameters.secondaryFlow.enabled
   }
 
+  private val radialBalanceEnabled = new CheckBox("Centripetal balance (pressure gradient)") {
+    selected = controller.simulationParameters.radialBalance.enabled
+  }
+  private val radialBalanceStrengthField = new NumericSliderField("Balance strength:", 0.0, 1.5, controller.simulationParameters.radialBalance.strength, 0.5, 2, onValueChanged = value =>
+    updateSimulation(controller.simulationParameters.copy(radialBalance = controller.simulationParameters.radialBalance.copy(strength = value))))
   private val rotationCombo = new ComboBox[String](ObservableBuffer("Counter-clockwise", "Clockwise")) {
     value = if (controller.simulationParameters.swirl.rotationDirection == RotationDirection.Clockwise) "Clockwise" else "Counter-clockwise"
     prefWidth = 170.0
@@ -88,6 +93,8 @@ final class FlowControlPane(
     secondaryStrengthField,
     secondaryResponseField,
     boundaryFadeField,
+    radialBalanceEnabled,
+    radialBalanceStrengthField,
     new Label("Rotation:"),
     rotationCombo
   )
@@ -105,6 +112,9 @@ final class FlowControlPane(
     updateSimulation(controller.simulationParameters.copy(secondaryFlow = controller.simulationParameters.secondaryFlow.copy(enabled = enabled)))
   }
 
+  radialBalanceEnabled.selected.onChange { (_, _, enabled) =>
+    updateSimulation(controller.simulationParameters.copy(radialBalance = controller.simulationParameters.radialBalance.copy(enabled = enabled)))
+  }
   rotationCombo.value.onChange { (_, _, next) =>
     val direction = if (next == "Clockwise") RotationDirection.Clockwise else RotationDirection.CounterClockwise
     updateSimulation(controller.simulationParameters.copy(swirl = controller.simulationParameters.swirl.copy(rotationDirection = direction)))

@@ -3,7 +3,7 @@ package io.codeswarm.schauberger.application
 import io.codeswarm.schauberger.diagnostics.{CrossSectionVelocityFieldSampler, ScalarFieldCalculator}
 import io.codeswarm.schauberger.geometry.GeometryFactory
 import io.codeswarm.schauberger.model.{GeometryParameters, SimulationParameters, VisualizationParameters}
-import io.codeswarm.schauberger.physics.{AxialFlowForce, CompositeFlowForce, SecondaryFlowForce, SwirlForce, WallRepulsionForce}
+import io.codeswarm.schauberger.physics.DefaultFlowForces
 import io.codeswarm.schauberger.physics.secondary.TwinVortexSecondaryFlow
 import io.codeswarm.schauberger.physics.swirl.SwirlProfileFactory
 import io.codeswarm.schauberger.simulation.{FlowMetricsCalculator, PipeBoundaryHandler, SecondaryFlowFieldSampler, SemiImplicitEulerIntegrator, SimulationEngine, UniformCrossSectionParticleGenerator}
@@ -21,12 +21,7 @@ object SchaubergerFlowApplication extends JFXApp3 {
     val secondaryModel = new TwinVortexSecondaryFlow
     val swirlProfileFactory = new SwirlProfileFactory
     val engine = new SimulationEngine(
-      forceModel = CompositeFlowForce(Vector(
-        new AxialFlowForce,
-        new SwirlForce(swirlProfileFactory),
-        new SecondaryFlowForce(secondaryModel),
-        new WallRepulsionForce
-      )),
+      forceModel = DefaultFlowForces.create(swirlProfileFactory, secondaryModel),
       integrator = new SemiImplicitEulerIntegrator,
       particleGenerator = new UniformCrossSectionParticleGenerator(42L),
       boundaryHandler = new PipeBoundaryHandler

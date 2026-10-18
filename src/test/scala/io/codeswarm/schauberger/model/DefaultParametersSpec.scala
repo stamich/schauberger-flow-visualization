@@ -17,6 +17,10 @@ class DefaultParametersSpec extends AnyFunSuite {
     assert(parameters.secondaryFlow.strength == 18.0)
   }
 
+  test("centripetal balance is enabled at its ideal strength by default") {
+    assert(SimulationParameters.Default.radialBalance == RadialBalanceParameters(enabled = true, strength = 1.0))
+  }
+
   test("trails remain short, sampled and age limited") {
     val visualization = VisualizationParameters.Default
     assert(visualization.trailLength == 48)

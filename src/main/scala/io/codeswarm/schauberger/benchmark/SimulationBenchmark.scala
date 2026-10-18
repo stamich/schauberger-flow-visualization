@@ -3,7 +3,7 @@ package io.codeswarm.schauberger.benchmark
 import io.codeswarm.schauberger.geometry._
 import io.codeswarm.schauberger.math.Vector3D
 import io.codeswarm.schauberger.model._
-import io.codeswarm.schauberger.physics.{AxialFlowForce, CompositeFlowForce, FlowForce, SecondaryFlowForce, SwirlForce, WallRepulsionForce}
+import io.codeswarm.schauberger.physics.DefaultFlowForces
 import io.codeswarm.schauberger.physics.secondary.TwinVortexSecondaryFlow
 import io.codeswarm.schauberger.physics.swirl.SwirlProfileFactory
 import io.codeswarm.schauberger.simulation.{DefaultGeometryContextCalculator, PipeBoundaryHandler, SecondaryFlowFieldSampler, SemiImplicitEulerIntegrator, SimulationEngine, UniformCrossSectionParticleGenerator}
@@ -91,17 +91,8 @@ object SimulationBenchmark {
   private def runCase(scenario: Scenario, count: Int): Result = {
     val secondaryModel = new TwinVortexSecondaryFlow
     val profileFactory = new SwirlProfileFactory
-    val swirlForces: Vector[FlowForce] = Vector(
-      new AxialFlowForce,
-      new SwirlForce(profileFactory),
-      new WallRepulsionForce
-    )
-    val forces = if (scenario.secondaryEnabled)
-      swirlForces.patch(2, Vector(new SecondaryFlowForce(secondaryModel)), 0)
-    else swirlForces
-
     val engine = new SimulationEngine(
-      CompositeFlowForce(forces),
+      DefaultFlowForces.create(profileFactory, secondaryModel, withSecondary = scenario.secondaryEnabled),
       new SemiImplicitEulerIntegrator,
       new UniformCrossSectionParticleGenerator(42L),
       new PipeBoundaryHandler
