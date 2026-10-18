@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "io.codeswarm"
-version = "0.6.0-buildfix1"
+version = "0.7.0"
 
 repositories {
     mavenCentral()
@@ -39,7 +39,7 @@ jmh {
     iterations = 8
     fork = 1
     resultFormat = "JSON"
-    resultsFile = project.file("benchmark/results/jmh-0.6.0.json")
+    resultsFile = project.file("benchmark/results/jmh-0.7.0.json")
 }
 
 javafx {
@@ -66,7 +66,7 @@ tasks.test {
 
 tasks.register<JavaExec>("benchmark") {
     group = "verification"
-    description = "Runs milestone 0.6 statistical simulation, geometry, profile and accuracy benchmarks and writes JSON results."
+    description = "Runs milestone 0.7 statistical simulation, geometry, profile and accuracy benchmarks and writes JSON results."
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("io.codeswarm.schauberger.benchmark.SimulationBenchmark")
 }

@@ -35,8 +35,8 @@ jobs:
       - name: Upload benchmark JSON
         uses: actions/upload-artifact@v7
         with:
-          name: benchmark-0.6.0
+          name: benchmark-0.7.0
           path: |
-            benchmark/results/benchmark-0.6.0.json
-            benchmark/results/jmh-0.6.0.json
+            benchmark/results/benchmark-0.7.0.json
+            benchmark/results/jmh-0.7.0.json
           if-no-files-found: error

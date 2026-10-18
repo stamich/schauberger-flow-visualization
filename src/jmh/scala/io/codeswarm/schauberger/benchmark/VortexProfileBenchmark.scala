@@ -1,12 +1,12 @@
 package io.codeswarm.schauberger.benchmark
 
-import io.codeswarm.schauberger.physics.swirl.{LambOseenVortexProfile, RankineVortexProfile, SolidBodySwirlProfile}
+import io.codeswarm.schauberger.physics.swirl.{CounterRotatingVortexProfile, LambOseenVortexProfile, RankineVortexProfile, SolidBodySwirlProfile, TanhTransition}
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 
 import java.util.concurrent.TimeUnit
 
-/** JMH microbenchmark for the three milestone 0.6 vortex profiles. */
+/** JMH microbenchmark for the single vortex profiles and the counter-rotating blend. */
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Warmup(iterations = 5)
@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit
 class VortexProfileBenchmark {
   private val rankine = RankineVortexProfile(0.35)
   private val lambOseen = LambOseenVortexProfile(1.0, 0.30)
+  private val counterRotating = CounterRotatingVortexProfile(RankineVortexProfile(0.4), SolidBodySwirlProfile, 1.0, 0.6, TanhTransition(0.55, 0.08))
   private var radius = 42.0
 
   /** Benchmarks solid-body target velocity. */
@@ -32,4 +33,9 @@ class VortexProfileBenchmark {
   @Benchmark
   def lambOseenProfile(blackhole: Blackhole): Unit =
     blackhole.consume(lambOseen.tangentialVelocity(radius, 100.0, 0.55))
+
+  /** Benchmarks the counter-rotating blend, which evaluates two layers and a tanh. */
+  @Benchmark
+  def counterRotatingProfile(blackhole: Blackhole): Unit =
+    blackhole.consume(counterRotating.tangentialVelocity(radius, 100.0, 0.55))
 }
