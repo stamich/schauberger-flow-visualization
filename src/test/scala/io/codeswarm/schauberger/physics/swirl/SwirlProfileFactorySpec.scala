@@ -1,6 +1,6 @@
 package io.codeswarm.schauberger.physics.swirl
 
-import io.codeswarm.schauberger.model.{LambOseenParameters, RankineParameters, SolidBodyParameters}
+import io.codeswarm.schauberger.model.{CounterRotatingParameters, LambOseenParameters, RankineParameters, SolidBodyParameters}
 import org.junit.runner.RunWith
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.junit.JUnitRunner
@@ -45,5 +45,25 @@ class SwirlProfileFactorySpec extends AnyFunSuite {
       assert(factory.create(lamb) == LambOseenVortexProfile(1.5, 0.25))
       assert(factory.create(SolidBodyParameters) eq SolidBodySwirlProfile)
     }
+  }
+
+  test("counter-rotating parameters build a composite from the configured layers") {
+    val parameters = CounterRotatingParameters(
+      inner = RankineParameters(0.3), outer = LambOseenParameters(1.0, 0.5),
+      innerStrength = 0.9, outerStrength = 0.4, transitionRadius = 0.6, transitionWidth = 0.1
+    )
+    new SwirlProfileFactory().create(parameters) match {
+      case CounterRotatingVortexProfile(inner, outer, innerStrength, outerStrength, transition) =>
+        assert(inner == RankineVortexProfile(0.3))
+        assert(outer == LambOseenVortexProfile(1.0, 0.5))
+        assert(innerStrength == 0.9 && outerStrength == 0.4)
+        assert(transition == TanhTransition(0.6, 0.1))
+      case other => fail(s"unexpected profile $other")
+    }
+  }
+
+  test("a composite is cached like any other profile") {
+    val factory = new SwirlProfileFactory
+    assert(factory.create(CounterRotatingParameters()) eq factory.create(CounterRotatingParameters()))
   }
 }

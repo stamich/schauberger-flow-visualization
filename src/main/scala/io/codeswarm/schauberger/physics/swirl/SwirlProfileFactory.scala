@@ -1,6 +1,6 @@
 package io.codeswarm.schauberger.physics.swirl
 
-import io.codeswarm.schauberger.model.{LambOseenParameters, RankineParameters, SolidBodyParameters, VortexProfileParameters}
+import io.codeswarm.schauberger.model.{CounterRotatingParameters, LambOseenParameters, RankineParameters, SimpleVortexProfileParameters, SolidBodyParameters, VortexProfileParameters}
 import java.util.concurrent.atomic.AtomicReference
 
 /** Centralizes mapping from immutable profile parameters to profile strategies.
@@ -29,6 +29,19 @@ final class SwirlProfileFactory {
 
   /** Builds one concrete profile. */
   private def build(parameters: VortexProfileParameters): SwirlProfile = parameters match {
+    case simple: SimpleVortexProfileParameters => buildSimple(simple)
+    case composite: CounterRotatingParameters =>
+      CounterRotatingVortexProfile(
+        buildSimple(composite.inner),
+        buildSimple(composite.outer),
+        composite.innerStrength,
+        composite.outerStrength,
+        TanhTransition(composite.transitionRadius, composite.transitionWidth)
+      )
+  }
+
+  /** Builds a single-vortex profile. */
+  private def buildSimple(parameters: SimpleVortexProfileParameters): SwirlProfile = parameters match {
     case SolidBodyParameters => SolidBodySwirlProfile
     case RankineParameters(coreRadiusRatio) => RankineVortexProfile(coreRadiusRatio)
     case LambOseenParameters(circulation, coreRadiusRatio) => LambOseenVortexProfile(circulation, coreRadiusRatio)
