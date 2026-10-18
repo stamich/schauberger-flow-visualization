@@ -19,6 +19,7 @@ final class SimulationView(
   private val secondaryLabel = new Label("Secondary: --")
   private val energyLabel = new Label("Secondary ratio: --")
   private val occupancyLabel = new Label("Occupancy: --")
+  private val regionLabel = new Label("Rotation: --")
   private val twistLabel = new Label("Twist: --")
   private val profileLabel = new Label("Profile: --")
   private var lastTimestamp = 0L
@@ -37,6 +38,7 @@ final class SimulationView(
       secondaryLabel,
       energyLabel,
       occupancyLabel,
+      regionLabel,
       twistLabel
     )
   }
@@ -73,6 +75,7 @@ final class SimulationView(
     secondaryLabel.text = f"Secondary: ${metrics.meanSecondaryVelocity}%.2f"
     energyLabel.text = f"Secondary ratio: ${metrics.secondaryFlowEnergyRatio * 100.0}%.1f%%"
     occupancyLabel.text = f"Inner/middle/outer: ${metrics.occupancy.inner * 100.0}%.0f/${metrics.occupancy.middle * 100.0}%.0f/${metrics.occupancy.outer * 100.0}%.0f%%"
+    regionLabel.text = f"Forward/reverse/still: ${metrics.regions.forwardShare * 100.0}%.0f/${metrics.regions.reverseShare * 100.0}%.0f/${metrics.regions.quiescentShare * 100.0}%.0f%%"
     twistLabel.text = f"Twist rate: ${controller.geometry.twistRate}%.4f"
   }
 }

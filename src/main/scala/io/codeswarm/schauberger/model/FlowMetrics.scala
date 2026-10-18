@@ -9,7 +9,8 @@ final case class FlowMetrics(
                               meanNormalizedRadialPosition: Double,
                               meanSecondaryVelocity: Double,
                               secondaryFlowEnergyRatio: Double,
-                              occupancy: RadialOccupancy = RadialOccupancy.Empty
+                              occupancy: RadialOccupancy = RadialOccupancy.Empty,
+                              regions: VortexRegionMetrics = VortexRegionMetrics.Empty
                             )
 
 /** Zero-valued metrics for empty states. */
