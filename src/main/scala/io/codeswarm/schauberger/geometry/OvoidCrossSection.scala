@@ -5,7 +5,7 @@ import io.codeswarm.schauberger.math.Vector2D
 
 /** Smooth asymmetric ovoid represented by an angle-dependent polar radius.
  *
- * Milestone 0.6 delegates boundary evaluation to a pluggable kernel. Exact
+ * Boundary evaluation is delegated boundary evaluation to a pluggable kernel. Exact
  * mode keeps analytic equations for validation while lookup mode precomputes
  * the expensive radius/normal data and interpolates it during simulation.
  *
@@ -20,7 +20,7 @@ final case class OvoidCrossSection(
                                     height: Double,
                                     asymmetry: Double,
                                     evaluationMode: GeometryEvaluationMode = GeometryEvaluationMode.Lookup,
-                                    lookupSamples: Int = 1024
+                                    lookupSamples: Int = 512
                                   ) extends CrossSectionShape {
   require(width > 0.0 && height > 0.0)
   require(asymmetry >= -0.35 && asymmetry <= 0.35)
@@ -48,6 +48,13 @@ final case class OvoidCrossSection(
   /** Returns a positive radial boundary gap for inside points. */
   override def signedDistance(point: Vector2D): Double =
     boundaryRadius(math.atan2(point.y, point.x)) - point.magnitude
+
+  /** Evaluates distance and normal with a single polar angle and a single boundary lookup. */
+  override def boundaryQuery(point: Vector2D): BoundaryQuery = {
+    val distanceFromAxis = point.magnitude
+    val ray = kernel.rayAt(math.atan2(point.y, point.x))
+    BoundaryQuery(ray.radius - distanceFromAxis, if (distanceFromAxis <= Vector2D.Epsilon) Vector2D.Zero else ray.inwardNormal)
+  }
 
   /** Returns an inward unit normal using the configured geometry kernel. */
   override def inwardNormal(point: Vector2D): Vector2D = {
