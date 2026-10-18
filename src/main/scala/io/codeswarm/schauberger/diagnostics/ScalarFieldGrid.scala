@@ -10,4 +10,7 @@ final case class ScalarFieldGrid(resolution: Int, cells: Vector[ScalarFieldCell]
 
   /** Returns minimum and maximum finite inside values, or zeros for an empty grid. */
   def range: FieldRange = FieldRange.from(insideValues)
+
+  /** Returns the range to colour `fieldType` with: centered on zero for signed fields, min-max otherwise. */
+  def rangeFor(fieldType: FieldType): FieldRange = if (fieldType.signed) range.symmetric else range
 }
