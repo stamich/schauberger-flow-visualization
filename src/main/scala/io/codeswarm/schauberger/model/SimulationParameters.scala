@@ -1,6 +1,6 @@
 package io.codeswarm.schauberger.model
 
-/** Immutable physical and numerical parameters for milestone 0.6.
+/** Immutable physical and numerical parameters.
  *
  * Flow-domain settings are grouped so the simulation can grow without turning
  * this type into a flat list of unrelated numeric values.
@@ -12,7 +12,8 @@ final case class SimulationParameters(
                                        secondaryFlow: SecondaryFlowParameters,
                                        wall: WallParameters,
                                        maxVelocity: Double,
-                                       fixedTimeStep: Double
+                                       fixedTimeStep: Double,
+                                       radialBalance: RadialBalanceParameters = RadialBalanceParameters.Default
                                      ) {
   require(particleCount > 0)
   require(maxVelocity > 0.0)

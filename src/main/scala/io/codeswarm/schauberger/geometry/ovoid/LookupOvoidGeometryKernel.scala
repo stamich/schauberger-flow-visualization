@@ -10,6 +10,9 @@ final class LookupOvoidGeometryKernel(lookup: OvoidBoundaryLookup) extends Ovoid
   /** Returns interpolated inward boundary normal. */
   override def normalAt(angle: Double): Vector2D = lookup.normalAt(angle)
 
+  /** Returns radius and normal from one table lookup. */
+  override def rayAt(angle: Double): BoundaryRay = lookup.rayAt(angle)
+
   /** Returns a boundary point from the interpolated radius. */
   override def boundaryPoint(angle: Double): Vector2D = {
     val radius = lookup.radiusAt(angle)

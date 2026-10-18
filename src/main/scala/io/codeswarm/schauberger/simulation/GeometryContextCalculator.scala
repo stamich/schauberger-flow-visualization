@@ -16,9 +16,9 @@ final class DefaultGeometryContextCalculator extends GeometryContextCalculator {
     val x = particle.position.x
     val frame = geometry.localFrameAt(particle.position)
     val local = frame.worldPointToLocal(particle.position)
-    val distance = geometry.crossSection.signedDistance(local)
-    val localNormal = geometry.crossSection.inwardNormal(local)
-    val worldNormal = frame.crossSectionVectorToWorld(localNormal).normalized
+    val boundary = geometry.crossSection.boundaryQuery(local)
+    val distance = boundary.signedDistance
+    val worldNormal = frame.crossSectionVectorToWorld(boundary.inwardNormal).normalized
     ParticleGeometryContext(
       center = frame.origin,
       localPosition = local,

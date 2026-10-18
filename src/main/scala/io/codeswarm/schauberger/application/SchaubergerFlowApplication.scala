@@ -3,7 +3,7 @@ package io.codeswarm.schauberger.application
 import io.codeswarm.schauberger.diagnostics.{CrossSectionVelocityFieldSampler, ScalarFieldCalculator}
 import io.codeswarm.schauberger.geometry.GeometryFactory
 import io.codeswarm.schauberger.model.{GeometryParameters, SimulationParameters, VisualizationParameters}
-import io.codeswarm.schauberger.physics.{AxialFlowForce, CompositeFlowForce, SecondaryFlowForce, SwirlForce, WallRepulsionForce}
+import io.codeswarm.schauberger.physics.DefaultFlowForces
 import io.codeswarm.schauberger.physics.secondary.TwinVortexSecondaryFlow
 import io.codeswarm.schauberger.physics.swirl.SwirlProfileFactory
 import io.codeswarm.schauberger.simulation.{FlowMetricsCalculator, PipeBoundaryHandler, SecondaryFlowFieldSampler, SemiImplicitEulerIntegrator, SimulationEngine, UniformCrossSectionParticleGenerator}
@@ -13,7 +13,7 @@ import scalafx.application.JFXApp3
 import scalafx.scene.Scene
 import scalafx.scene.canvas.Canvas
 
-/** ScalaFX entry point wiring milestone 0.6 domain components to the UI. */
+/** ScalaFX entry point wiring milestone 0.7 domain components to the UI. */
 object SchaubergerFlowApplication extends JFXApp3 {
 
   /** Constructs the application graph, shows the primary stage and starts animation. */
@@ -21,12 +21,7 @@ object SchaubergerFlowApplication extends JFXApp3 {
     val secondaryModel = new TwinVortexSecondaryFlow
     val swirlProfileFactory = new SwirlProfileFactory
     val engine = new SimulationEngine(
-      forceModel = CompositeFlowForce(Vector(
-        new AxialFlowForce,
-        new SwirlForce(swirlProfileFactory),
-        new SecondaryFlowForce(secondaryModel),
-        new WallRepulsionForce
-      )),
+      forceModel = DefaultFlowForces.create(swirlProfileFactory, secondaryModel),
       integrator = new SemiImplicitEulerIntegrator,
       particleGenerator = new UniformCrossSectionParticleGenerator(42L),
       boundaryHandler = new PipeBoundaryHandler
@@ -54,7 +49,7 @@ object SchaubergerFlowApplication extends JFXApp3 {
     val view = new SimulationView(canvas, controller)
 
     stage = new JFXApp3.PrimaryStage {
-      title = "Schauberger Flow Visualization 0.6"
+      title = "Schauberger Flow Visualization 0.7"
       scene = new Scene(1580.0, 1080.0) {
         root = view
       }

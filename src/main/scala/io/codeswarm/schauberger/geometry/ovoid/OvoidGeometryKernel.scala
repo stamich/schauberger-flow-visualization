@@ -12,4 +12,7 @@ trait OvoidGeometryKernel {
 
   /** Returns a boundary point for `angle`. */
   def boundaryPoint(angle: Double): Vector2D
+
+  /** Returns radius and inward normal for `angle`; kernels override it to evaluate the ray once. */
+  def rayAt(angle: Double): BoundaryRay = BoundaryRay(radiusAt(angle), normalAt(angle))
 }

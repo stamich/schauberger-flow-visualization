@@ -6,7 +6,7 @@ import scalafx.scene.canvas.Canvas
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{BorderPane, HBox}
 
-/** Main ScalaFX composition containing status, Canvas and milestone 0.6 controls. */
+/** Main ScalaFX composition containing status, Canvas and milestone 0.7 controls. */
 final class SimulationView(
                             canvas: Canvas,
                             controller: SimulationController
@@ -18,6 +18,8 @@ final class SimulationView(
   private val tangentialLabel = new Label("Tangential: --")
   private val secondaryLabel = new Label("Secondary: --")
   private val energyLabel = new Label("Secondary ratio: --")
+  private val occupancyLabel = new Label("Occupancy: --")
+  private val regionLabel = new Label("Rotation: --")
   private val twistLabel = new Label("Twist: --")
   private val profileLabel = new Label("Profile: --")
   private var lastTimestamp = 0L
@@ -26,7 +28,7 @@ final class SimulationView(
     spacing = 12.0
     padding = Insets(8.0, 14.0, 8.0, 14.0)
     children = Seq(
-      new Label("Schauberger Flow Visualization 0.6"),
+      new Label("Schauberger Flow Visualization 0.7"),
       fpsLabel,
       stateLabel,
       geometryLabel,
@@ -35,6 +37,8 @@ final class SimulationView(
       profileLabel,
       secondaryLabel,
       energyLabel,
+      occupancyLabel,
+      regionLabel,
       twistLabel
     )
   }
@@ -70,6 +74,8 @@ final class SimulationView(
     profileLabel.text = s"Profile: ${controller.simulationParameters.swirl.profile.id}"
     secondaryLabel.text = f"Secondary: ${metrics.meanSecondaryVelocity}%.2f"
     energyLabel.text = f"Secondary ratio: ${metrics.secondaryFlowEnergyRatio * 100.0}%.1f%%"
+    occupancyLabel.text = f"Inner/middle/outer: ${metrics.occupancy.inner * 100.0}%.0f/${metrics.occupancy.middle * 100.0}%.0f/${metrics.occupancy.outer * 100.0}%.0f%%"
+    regionLabel.text = f"Forward/reverse/still: ${metrics.regions.forwardShare * 100.0}%.0f/${metrics.regions.reverseShare * 100.0}%.0f/${metrics.regions.quiescentShare * 100.0}%.0f%%"
     twistLabel.text = f"Twist rate: ${controller.geometry.twistRate}%.4f"
   }
 }

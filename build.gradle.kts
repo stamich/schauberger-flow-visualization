@@ -1,4 +1,5 @@
 import org.gradle.api.tasks.ScalaSourceDirectorySet
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
     scala
@@ -8,13 +9,13 @@ plugins {
 }
 
 group = "io.codeswarm"
-version = "0.6.0-buildfix1"
+version = "0.7.0"
 
 repositories {
     mavenCentral()
 }
 
-val scalaVersion = "2.13.15"
+val scalaVersion = "2.13.18"
 val scalaFxVersion = "21.0.0-R32"
 val scalaTestVersion = "3.2.19"
 
@@ -38,27 +39,34 @@ jmh {
     iterations = 8
     fork = 1
     resultFormat = "JSON"
-    resultsFile = project.file("benchmark/results/jmh-0.6.0.json")
+    resultsFile = project.file("benchmark/results/jmh-0.7.0.json")
 }
 
 javafx {
-    version = "21.0.5"
-    modules("javafx.controls")
+    version = "21.0.8"
+    modules("javafx.controls", "javafx.fxml", "javafx.media")
 }
 
 application {
     mainClass.set("io.codeswarm.schauberger.application.SchaubergerFlowApplication")
 }
 
+tasks.withType<ScalaCompile>().configureEach {
+    scalaCompileOptions.additionalParameters = listOf("-deprecation", "-feature", "-unchecked")
+}
+
 tasks.test {
+    // ScalaTest suites run through JUnitRunner, so JUnit 4 is selected explicitly instead of relying on defaults.
+    useJUnit()
     testLogging {
         events("passed", "skipped", "failed")
+        exceptionFormat = TestExceptionFormat.FULL
     }
 }
 
 tasks.register<JavaExec>("benchmark") {
     group = "verification"
-    description = "Runs milestone 0.6 statistical simulation, geometry, profile and accuracy benchmarks and writes JSON results."
+    description = "Runs milestone 0.7 statistical simulation, geometry, profile and accuracy benchmarks and writes JSON results."
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("io.codeswarm.schauberger.benchmark.SimulationBenchmark")
 }

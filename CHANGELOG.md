@@ -1,5 +1,70 @@
 # Changelog
 
+All notable changes to this project are documented here.
+
+## [0.7.0] - 2026-10-18
+
+Milestone 0.7 adds a counter-rotating (double) vortex. While working on it, an analysis of milestones 0.1–0.6 turned up
+four defects in the existing force model; they are fixed here because a reversing profile exposes them immediately.
+
+### Added
+- `CounterRotatingVortexProfile` and `CounterRotatingParameters`: an inner layer turning with the configured direction
+  and an outer layer turning against it, `v = s_i w v_inner - s_o (1 - w) v_outer`, blended by a `TransitionFunction`.
+- `TransitionFunction` and `TanhTransition` (smooth, symmetric, bounded in `[0, 1]`).
+- `SimpleVortexProfileParameters`: solid-body, Rankine and Lamb-Oseen can be composite layers; composites cannot nest.
+- `CentripetalBalanceForce` and `RadialBalanceParameters`: the radial pressure-gradient acceleration `-v_theta^2 / r`
+  that keeps swirling tracers on their orbit (enabled by default, strength 1.0, editable in the UI).
+- `CrossSectionFlowForce`: one combined swirl and secondary-flow force (see *Fixed*).
+- `RadialOccupancy`: share of tracers in the inner, middle and outer third of the normalized radius, shown in the
+  status bar. An area-uniform population gives about 11 / 33 / 56 %.
+- `VortexRegion` and `VortexRegionMetrics`: tracers are classified as forward, reverse or quiescent relative to the
+  configured rotation direction; shares and mean angular velocities are reported in `FlowMetrics.regions`.
+- Signed diagnostics: `RadialProfileSampler` reports the peak by magnitude, `ZeroCrossingDetector` finds sign changes,
+  `VortexProfileDiagnostics` gains `zeroCrossings`, `reverseVelocity` and `isCounterRotating`.
+- Diverging blue-neutral-red palette (`DivergingPalette`) and zero-centred ranges for the tangential-velocity and
+  vorticity heat maps (`FieldType.signed`, `FieldRange.symmetric`).
+- `AnalyticProfileFieldSampler` and `HeatMapSource`: the heat map can show the noise-free analytic profile next to the
+  particle field.
+- `TemporalFieldAverager`: exponential moving average of the particle heat map (default memory 0.7).
+- `VortexProfileControlPane`: profile kind selector, counter-rotating sliders and four presets; the editing rules are
+  in the ScalaFX-free `VortexProfileEdits`.
+- Particles and trails are coloured by rotation sense (`RotationSenseClassifier`, `RotationSensePalette`); switchable.
+- `CrossSectionShape.boundaryQuery` and `BoundaryQuery`: distance and normal from one boundary evaluation.
+- Benchmark scenarios for counter-rotating flow and for the balance cost; JMH benchmarks for the single-ray lookup,
+  combined cross-section query and counter-rotating profile.
+- `docs/BENCHMARKS.md` with a 0.6 versus 0.7 comparison.
+
+### Fixed
+- **Outward drift of swirling tracers.** Without a centripetal term a tracer with tangential speed moved along a
+  straight tangent and drifted toward the wall: after 2400 steps the outer third held more than 30 percentage points
+  more tracers than the no-swirl reference. The new balance force removes this.
+- **Swirl and secondary flow fought each other.** `SwirlForce` and `SecondaryFlowForce` each relaxed the whole in-plane
+  velocity toward their own target, so with both enabled swirl settled at `k_s / (k_s + k_2)` of its profile value
+  (mean angular velocity 0.30 instead of 0.57 with the defaults). They are replaced by `CrossSectionFlowForce`, which
+  relaxes the radial and tangential axes once each. With secondary flow off the result is unchanged.
+- **Tests that could not fail.** `PipeBoundaryHandler` clamps every tracer, so containment assertions were always true.
+  New engine tests assert on the radial occupancy and the angular velocity instead, and were checked to fail without
+  the fixes.
+- `SwirlProfileFactory` kept every parameter set ever requested in an unbounded map, so dragging a slider grew it
+  without limit. It now remembers only the latest parameters.
+- Gradle wrapper moved to 8.10.2 with a pinned checksum; CI and the benchmark workflow call `./gradlew`;
+  `-deprecation -feature -unchecked` for Scala; full test exception output; removed dead pre-0.3 and pre-0.6 classes.
+
+### Changed
+- `SwirlProfile.tangentialVelocity` is now documented as **signed**.
+- Default ovoid lookup size 1024 -> 512 (maximum radius error 7.8e-6 relative, normal error 6.4e-4 degrees).
+- Geometry context evaluates the boundary once per particle instead of twice; the lookup table uses primitive arrays.
+- `DefaultFlowForces` is the single place where the force stack is assembled.
+- Benchmark output is `benchmark/results/benchmark-0.7.0.json`; JMH output is `jmh-0.7.0.json`.
+- Project version is 0.7.0.
+
+### Preserved
+- 750-particle readable default, fading age-limited trails, Solid Body default profile.
+- Editable numeric input for every slider; Apache License 2.0.
+
+### Not in this release
+- Geometry-induced swirl (the tangent rotating with a twisted pipe) is deferred to 0.8.
+
 ## [0.6.0-buildfix1] - 2026-10-01
 
 ### Fixed
@@ -41,8 +106,6 @@
 - Velocity/vorticity heat maps and spatial indexing.
 - Editable numeric input for every slider.
 - GitHub CI and Apache License 2.0.
-
-All notable changes to this project are documented here.
 
 ## [0.5.0] - 2026-10-01
 

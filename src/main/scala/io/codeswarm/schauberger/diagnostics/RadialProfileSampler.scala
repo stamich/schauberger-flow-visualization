@@ -3,7 +3,10 @@ package io.codeswarm.schauberger.diagnostics
 import io.codeswarm.schauberger.model.SwirlParameters
 import io.codeswarm.schauberger.physics.swirl.SwirlProfileFactory
 
-/** Samples the selected analytic vortex profile without running particles. */
+/** Samples the selected analytic vortex profile without running particles.
+ *
+ * Velocities are signed, so counter-rotating profiles report their reversed region and zero crossings.
+ */
 final class RadialProfileSampler(profileFactory: SwirlProfileFactory) {
   /** Samples radii from zero through the characteristic pipe radius. */
   def sample(
@@ -22,7 +25,13 @@ final class RadialProfileSampler(profileFactory: SwirlProfileFactory) {
         profile.tangentialVelocity(radius, characteristicRadius, parameters.angularVelocity)
       )
     }
-    val peak = samples.maxBy(_.tangentialVelocity)
-    VortexProfileDiagnostics(samples, peak.tangentialVelocity, peak.normalizedRadius)
+    val peak = samples.maxBy(sample => math.abs(sample.tangentialVelocity))
+    VortexProfileDiagnostics(
+      samples,
+      peak.tangentialVelocity,
+      peak.normalizedRadius,
+      ZeroCrossingDetector.detect(samples),
+      math.min(0.0, samples.iterator.map(_.tangentialVelocity).min)
+    )
   }
 }

@@ -33,13 +33,13 @@ final class SimulationRenderer(
     trailBuffer.record(state, visualization.trailLength, visualization.trailDurationSeconds, visualization.trailSampleEveryFrames)
 
     if (visualization.viewMode == ViewMode.CrossSection && visualization.showHeatMap) {
-      heatMapRenderer.render(graphics, state, geometry, transform, sliceX, visualization)
+      heatMapRenderer.render(graphics, state, geometry, transform, sliceX, simulation, visualization)
     }
     if (visualization.viewMode == ViewMode.CrossSection && visualization.showSecondaryVectors) {
       vectorFieldRenderer.render(graphics, geometry, transform, sliceX, simulation.secondaryFlow, visualization.vectorFieldResolution)
     }
-    if (visualization.showTrails) trailRenderer.render(graphics, state, trailBuffer, projection, transform, visualization, sliceX)
-    if (visualization.showParticles) particleRenderer.render(graphics, state, geometry, projection, transform, visualization, sliceX)
+    if (visualization.showTrails) trailRenderer.render(graphics, state, trailBuffer, projection, transform, visualization, sliceX, geometry, simulation.swirl)
+    if (visualization.showParticles) particleRenderer.render(graphics, state, geometry, projection, transform, visualization, sliceX, simulation.swirl)
     pipeRenderer.render(graphics, geometry, transform, visualization, sliceX)
   }
 

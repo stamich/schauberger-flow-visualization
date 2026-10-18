@@ -13,6 +13,9 @@ trait CrossSectionShape {
   /** Inward-pointing local unit normal at/near the boundary. */
   def inwardNormal(point: Vector2D): Vector2D
 
+  /** Returns [[signedDistance]] and [[inwardNormal]] together; shapes override it to share the boundary evaluation. */
+  def boundaryQuery(point: Vector2D): BoundaryQuery = BoundaryQuery(signedDistance(point), inwardNormal(point))
+
   /** Projects a point just inside the cross-section. */
   def clampInside(point: Vector2D, epsilon: Double = 1e-6): Vector2D
 

@@ -3,7 +3,7 @@ package io.codeswarm.schauberger.benchmark
 import io.codeswarm.schauberger.geometry._
 import io.codeswarm.schauberger.math.Vector3D
 import io.codeswarm.schauberger.model._
-import io.codeswarm.schauberger.physics.{AxialFlowForce, CompositeFlowForce, FlowForce, SecondaryFlowForce, SwirlForce, WallRepulsionForce}
+import io.codeswarm.schauberger.physics.DefaultFlowForces
 import io.codeswarm.schauberger.physics.secondary.TwinVortexSecondaryFlow
 import io.codeswarm.schauberger.physics.swirl.SwirlProfileFactory
 import io.codeswarm.schauberger.simulation.{DefaultGeometryContextCalculator, PipeBoundaryHandler, SecondaryFlowFieldSampler, SemiImplicitEulerIntegrator, SimulationEngine, UniformCrossSectionParticleGenerator}
@@ -11,7 +11,10 @@ import io.codeswarm.schauberger.simulation.{DefaultGeometryContextCalculator, Pi
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 
-/** Milestone 0.6 regression benchmark with profile, geometry and accuracy measurements. */
+/** Milestone 0.7 regression benchmark with profile, geometry and accuracy measurements.
+ *
+ * Compared with 0.6 it adds counter-rotating scenarios, a scenario without the centripetal balance and
+ * the single-query geometry context on the 512-sample default lookup. */
 object SimulationBenchmark {
   private val WarmupIterations = 5
   private val MeasurementIterations = 10
@@ -21,7 +24,8 @@ object SimulationBenchmark {
                                      name: String,
                                      geometry: PipeGeometry,
                                      profile: VortexProfileParameters,
-                                     secondaryEnabled: Boolean
+                                     secondaryEnabled: Boolean,
+                                     radialBalance: Boolean = true
                                    )
 
   /** Statistical summary for one scenario/population pair. */
@@ -53,8 +57,9 @@ object SimulationBenchmark {
   /** Runs flow, field-sampling, geometry-context and lookup-accuracy benchmark groups. */
   def main(args: Array[String]): Unit = {
     val circular = StraightPipe(1000.0, CircularCrossSection(120.0))
-    val ovoidLookup = StraightPipe(1000.0, OvoidCrossSection(220.0, 250.0, 0.14, GeometryEvaluationMode.Lookup, 1024))
-    val twistedLookup = TwistedPipe(1000.0, OvoidCrossSection(220.0, 250.0, 0.14, GeometryEvaluationMode.Lookup, 1024), 1.25)
+    val ovoidLookup = StraightPipe(1000.0, OvoidCrossSection(220.0, 250.0, 0.14, GeometryEvaluationMode.Lookup, 512))
+    val twistedLookup = TwistedPipe(1000.0, OvoidCrossSection(220.0, 250.0, 0.14, GeometryEvaluationMode.Lookup, 512), 1.25)
+    val ovoidLookup1024 = StraightPipe(1000.0, OvoidCrossSection(220.0, 250.0, 0.14, GeometryEvaluationMode.Lookup, 1024))
 
     val scenarios = Vector(
       Scenario("circular-solid-body", circular, SolidBodyParameters, secondaryEnabled = false),
@@ -63,7 +68,10 @@ object SimulationBenchmark {
       Scenario("ovoid-solid-body", ovoidLookup, SolidBodyParameters, secondaryEnabled = false),
       Scenario("ovoid-rankine", ovoidLookup, RankineParameters(0.35), secondaryEnabled = false),
       Scenario("twisted-ovoid-rankine", twistedLookup, RankineParameters(0.35), secondaryEnabled = false),
-      Scenario("twisted-ovoid-rankine-secondary", twistedLookup, RankineParameters(0.35), secondaryEnabled = true)
+      Scenario("twisted-ovoid-rankine-secondary", twistedLookup, RankineParameters(0.35), secondaryEnabled = true),
+      Scenario("twisted-ovoid-counter-rotating", twistedLookup, CounterRotatingParameters(), secondaryEnabled = false),
+      Scenario("twisted-ovoid-counter-rotating-secondary", twistedLookup, CounterRotatingParameters(), secondaryEnabled = true),
+      Scenario("twisted-ovoid-rankine-no-balance", twistedLookup, RankineParameters(0.35), secondaryEnabled = false, radialBalance = false)
     )
 
     val counts = Vector(1000, 10000)
@@ -71,37 +79,30 @@ object SimulationBenchmark {
                        count <- counts} yield runCase(scenario, count)
     val stressResults = Vector(
       runCase(scenarios.head, 50000),
-      runCase(scenarios.last, 50000)
+      runCase(scenarios.find(_.name == "twisted-ovoid-rankine-secondary").get, 50000),
+      runCase(scenarios.find(_.name == "twisted-ovoid-counter-rotating-secondary").get, 50000)
     )
     val fieldResults = Vector(15, 30, 60).map(runFieldCase)
 
     val geometryResults = Vector(
       "circular" -> circular,
       "ovoid-exact" -> StraightPipe(1000.0, OvoidCrossSection(220.0, 250.0, 0.14, GeometryEvaluationMode.Exact, 1024)),
-      "ovoid-lookup-1024" -> ovoidLookup,
+      "ovoid-lookup-512" -> ovoidLookup,
+      "ovoid-lookup-1024" -> ovoidLookup1024,
       "twisted-ovoid-exact" -> TwistedPipe(1000.0, OvoidCrossSection(220.0, 250.0, 0.14, GeometryEvaluationMode.Exact, 1024), 1.25),
-      "twisted-ovoid-lookup-1024" -> twistedLookup
+      "twisted-ovoid-lookup-512" -> twistedLookup
     ).map { case (name, geometry) => runGeometryCase(name, geometry) }
 
     val accuracyResults = Vector(256, 512, 1024, 2048).map(runAccuracyCase)
-    writeJson(results ++ stressResults, fieldResults, geometryResults, accuracyResults, Paths.get("benchmark/results/benchmark-0.6.0.json"))
+    writeJson(results ++ stressResults, fieldResults, geometryResults, accuracyResults, Paths.get("benchmark/results/benchmark-0.7.0.json"))
   }
 
   /** Executes warmup then repeated timed measurements for one scenario. */
   private def runCase(scenario: Scenario, count: Int): Result = {
     val secondaryModel = new TwinVortexSecondaryFlow
     val profileFactory = new SwirlProfileFactory
-    val swirlForces: Vector[FlowForce] = Vector(
-      new AxialFlowForce,
-      new SwirlForce(profileFactory),
-      new WallRepulsionForce
-    )
-    val forces = if (scenario.secondaryEnabled)
-      swirlForces.patch(2, Vector(new SecondaryFlowForce(secondaryModel)), 0)
-    else swirlForces
-
     val engine = new SimulationEngine(
-      CompositeFlowForce(forces),
+      DefaultFlowForces.create(profileFactory, secondaryModel, withSecondary = scenario.secondaryEnabled),
       new SemiImplicitEulerIntegrator,
       new UniformCrossSectionParticleGenerator(42L),
       new PipeBoundaryHandler
@@ -110,7 +111,8 @@ object SimulationBenchmark {
       particleCount = count,
       swirl = SimulationParameters.Default.swirl.copy(profile = scenario.profile)
     )
-    val parameters = if (scenario.secondaryEnabled) base else base.copy(secondaryFlow = base.secondaryFlow.copy(enabled = false))
+    val withSecondary = if (scenario.secondaryEnabled) base else base.copy(secondaryFlow = base.secondaryFlow.copy(enabled = false))
+    val parameters = withSecondary.copy(radialBalance = withSecondary.radialBalance.copy(enabled = scenario.radialBalance))
     var state = engine.initialState(parameters, scenario.geometry)
     val steps = if (count >= 50000) 100 else 250
 
@@ -146,7 +148,7 @@ object SimulationBenchmark {
   private def runFieldCase(resolution: Int): FieldResult = {
     val model = new TwinVortexSecondaryFlow
     val sampler = new SecondaryFlowFieldSampler(model)
-    val geometry = TwistedPipe(1000.0, OvoidCrossSection(220.0, 250.0, 0.14, GeometryEvaluationMode.Lookup, 1024), 1.25)
+    val geometry = TwistedPipe(1000.0, OvoidCrossSection(220.0, 250.0, 0.14, GeometryEvaluationMode.Lookup, 512), 1.25)
     (0 until 5).foreach(_ => sampler.sample(geometry, 500.0, SimulationParameters.Default.secondaryFlow, resolution))
     var lastSamples = 0
     val times = Vector.tabulate(10) { _ =>
@@ -210,7 +212,7 @@ object SimulationBenchmark {
     sorted(index)
   }
 
-  /** Writes dependency-free JSON for milestone-to-milestone comparison. */
+  /** Writes dependency-free JSON for milestone-to-milestone comparison; names and fields extend the 0.6 file. */
   private def writeJson(
                          results: Vector[Result],
                          field: Vector[FieldResult],
@@ -227,7 +229,7 @@ object SimulationBenchmark {
     val accuracyJson = accuracy.map(r => f"""    {"samples":${r.samples},"maxRelativeRadiusError":${r.maxRelativeRadiusError}%.8f,"meanRelativeRadiusError":${r.meanRelativeRadiusError}%.8f,"maxNormalAngleErrorDegrees":${r.maxNormalAngleErrorDegrees}%.6f}""").mkString(",\n")
     val json =
       s"""{
-  "version": "0.6.0",
+  "version": "0.7.0",
   "warmupIterations": $WarmupIterations,
   "measurementIterations": $MeasurementIterations,
   "results": [

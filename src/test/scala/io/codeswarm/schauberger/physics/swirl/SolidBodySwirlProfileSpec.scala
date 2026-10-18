@@ -1,6 +1,5 @@
-package io.codeswarm.schauberger.physics
+package io.codeswarm.schauberger.physics.swirl
 
-import io.codeswarm.schauberger.physics.swirl.SolidBodySwirlProfile
 import org.junit.runner.RunWith
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.junit.JUnitRunner

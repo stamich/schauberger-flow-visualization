@@ -6,7 +6,7 @@ import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class DefaultParametersSpec extends AnyFunSuite {
-  test("milestone 0.6 keeps readable flow defaults") {
+  test("milestone 0.7 keeps readable flow defaults") {
     val parameters = SimulationParameters.Default
     assert(parameters.particleCount == 750)
     assert(parameters.axial.velocity == 90.0)
@@ -15,6 +15,10 @@ class DefaultParametersSpec extends AnyFunSuite {
     assert(parameters.swirl.profile == SolidBodyParameters)
     assert(parameters.secondaryFlow.enabled)
     assert(parameters.secondaryFlow.strength == 18.0)
+  }
+
+  test("centripetal balance is enabled at its ideal strength by default") {
+    assert(SimulationParameters.Default.radialBalance == RadialBalanceParameters(enabled = true, strength = 1.0))
   }
 
   test("trails remain short, sampled and age limited") {
@@ -26,5 +30,15 @@ class DefaultParametersSpec extends AnyFunSuite {
     assert(visualization.showHeatMap)
     assert(visualization.heatMapResolution == 30)
     assert(visualization.vectorFieldResolution == 15)
+  }
+
+  test("heat map defaults to the particle field with moderate smoothing") {
+    val visualization = VisualizationParameters.Default
+    assert(visualization.heatMapSource == HeatMapSource.Particles)
+    assert(visualization.heatMapSmoothing == 0.7)
+    assert(visualization.colorBySense)
+    assert(HeatMapSource.fromDisplayName("Analytic profile") == HeatMapSource.AnalyticProfile)
+    assert(HeatMapSource.fromDisplayName("unknown") == HeatMapSource.Particles)
+    assertThrows[IllegalArgumentException](visualization.copy(heatMapSmoothing = 1.0))
   }
 }

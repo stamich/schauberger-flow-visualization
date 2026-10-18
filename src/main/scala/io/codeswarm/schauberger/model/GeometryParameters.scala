@@ -29,6 +29,6 @@ object GeometryParameters {
     asymmetry = 0.14,
     twistTurns = 1.25,
     evaluationMode = GeometryEvaluationMode.Lookup,
-    lookupSamples = 1024
+    lookupSamples = 512
   )
 }
