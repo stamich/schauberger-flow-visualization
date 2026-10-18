@@ -4,7 +4,7 @@ import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.Button
 import scalafx.scene.layout.{HBox, VBox}
 
-/** Composite milestone 0.6 control panel built from focused sub-panes.
+/** Composite control panel built from focused sub-panes.
  *
  * Every numeric slider is paired with editable numeric input through
  * [[NumericSliderField]].
@@ -37,6 +37,7 @@ final class ControlPanel(controller: SimulationController, onStatusRefresh: () =
     spacing = 16.0
     children = Seq(
       new FlowControlPane(controller, onStatusRefresh),
+      new VortexProfileControlPane(controller, onStatusRefresh),
       new GeometryControlPane(controller, onStatusRefresh),
       new VisualizationControlPane(controller, onStatusRefresh),
       new DiagnosticsControlPane(controller, onStatusRefresh)
