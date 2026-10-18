@@ -22,17 +22,15 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
-        with:
-          gradle-version: "8.10.2"
 
       - name: Run tests first
-        run: gradle --no-daemon clean test
+        run: ./gradlew --no-daemon clean test
 
       - name: Run benchmark
-        run: gradle --no-daemon benchmark
+        run: ./gradlew --no-daemon benchmark
 
       - name: Run JMH microbenchmarks
-        run: gradle --no-daemon jmh
+        run: ./gradlew --no-daemon jmh
 
       - name: Upload benchmark JSON
         uses: actions/upload-artifact@v7

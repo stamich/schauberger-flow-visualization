@@ -147,17 +147,17 @@ The 0.5 diagnostic stack is preserved:
 
 ## Build and run
 
-Requirements: JDK 21 and Gradle 8.x.
+Requirements: JDK 21. The Gradle wrapper (8.10.2, checksum-pinned) is included; on Windows use `gradlew.bat`.
 
 ```bash
-gradle clean test
-gradle run
+./gradlew clean test
+./gradlew run
 ```
 
 ## Application benchmark
 
 ```bash
-gradle benchmark
+./gradlew benchmark
 ```
 
 The benchmark performs 5 warm-up iterations and 10 measurement iterations and writes:
@@ -178,7 +178,7 @@ It includes:
 ## JMH
 
 ```bash
-gradle jmh
+./gradlew jmh
 ```
 
 JMH microbenchmarks compare:
@@ -190,7 +190,7 @@ JMH complements, rather than replaces, the application benchmark.
 
 ## GitHub Actions
 
-- `.github/workflows/ci.yml` runs `gradle --no-daemon clean test` on push, pull request and manual dispatch.
+- `.github/workflows/ci.yml` runs `./gradlew --no-daemon clean test` on push, pull request and manual dispatch.
 - `.github/workflows/benchmark.yml` is manually triggered. It runs tests, the application benchmark, JMH, and uploads `benchmark-0.6.0.json`.
 
 ## Test coverage added in 0.6

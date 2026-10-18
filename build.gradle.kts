@@ -1,4 +1,5 @@
 import org.gradle.api.tasks.ScalaSourceDirectorySet
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
     scala
@@ -50,9 +51,16 @@ application {
     mainClass.set("io.codeswarm.schauberger.application.SchaubergerFlowApplication")
 }
 
+tasks.withType<ScalaCompile>().configureEach {
+    scalaCompileOptions.additionalParameters = listOf("-deprecation", "-feature", "-unchecked")
+}
+
 tasks.test {
+    // ScalaTest suites run through JUnitRunner, so JUnit 4 is selected explicitly instead of relying on defaults.
+    useJUnit()
     testLogging {
         events("passed", "skipped", "failed")
+        exceptionFormat = TestExceptionFormat.FULL
     }
 }
 
