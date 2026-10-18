@@ -1,14 +1,19 @@
 package io.codeswarm.schauberger.visualization
 
-import io.codeswarm.schauberger.model.{SimulationState, ViewMode, VisualizationParameters}
+import io.codeswarm.schauberger.geometry.PipeGeometry
+import io.codeswarm.schauberger.model.{SimulationState, SwirlParameters, ViewMode, VisualizationParameters}
 import scalafx.scene.canvas.GraphicsContext
 import scalafx.scene.paint.Color
 
-/** Renders short fading trajectory segments instead of indefinitely accumulating lines. */
-final class TrailRenderer {
-  def render(gc: GraphicsContext, state: SimulationState, trailBuffer: TrailBuffer, projection: Projection, transform: ViewportTransform, visualization: VisualizationParameters, sliceX: Double): Unit = {
+/** Renders short fading trajectory segments instead of indefinitely accumulating lines.
+ *
+ * With sense colouring on, a trail takes the colour of the way its particle currently turns.
+ */
+final class TrailRenderer(classifier: RotationSenseClassifier = new RotationSenseClassifier) {
+  def render(gc: GraphicsContext, state: SimulationState, trailBuffer: TrailBuffer, projection: Projection, transform: ViewportTransform, visualization: VisualizationParameters, sliceX: Double, geometry: PipeGeometry, swirl: SwirlParameters): Unit = {
     gc.lineWidth = 0.8
     state.particles.foreach { particle =>
+      val hex = if (visualization.colorBySense) RotationSensePalette.hex(classifier.classify(particle, geometry, swirl)) else "#78bdf2"
       val raw = trailBuffer.points(particle.id)
       val trail = visualization.viewMode match {
         case ViewMode.Longitudinal => raw
@@ -21,7 +26,7 @@ final class TrailRenderer {
           if (fade > 0.01) {
             val pa = transform.worldToScreen(projection.project(a.position))
             val pb = transform.worldToScreen(projection.project(b.position))
-            gc.stroke = Color.web("#78bdf2", 0.30 * fade)
+            gc.stroke = Color.web(hex, 0.30 * fade)
             gc.strokeLine(pa.x, pa.y, pb.x, pb.y)
           }
         case _ => ()

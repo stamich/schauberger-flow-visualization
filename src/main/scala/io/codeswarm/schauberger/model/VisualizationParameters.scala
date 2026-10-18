@@ -18,7 +18,8 @@ final case class VisualizationParameters(
                                           heatMapField: FieldType,
                                           heatMapResolution: Int,
                                           heatMapSource: HeatMapSource = HeatMapSource.Particles,
-                                          heatMapSmoothing: Double = 0.7
+                                          heatMapSmoothing: Double = 0.7,
+                                          colorBySense: Boolean = true
                                         ) {
   require(trailLength >= 0)
   require(trailDurationSeconds >= 0.0)

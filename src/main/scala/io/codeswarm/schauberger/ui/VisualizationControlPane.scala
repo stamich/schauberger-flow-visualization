@@ -31,6 +31,9 @@ final class VisualizationControlPane(
   private val showTrails = new CheckBox("Show trails") {
     selected = controller.visualizationParameters.showTrails
   }
+  private val colorBySense = new CheckBox("Colour by rotation sense") {
+    selected = controller.visualizationParameters.colorBySense
+  }
   private val showVectors = new CheckBox("Show secondary vector field") {
     selected = controller.visualizationParameters.showSecondaryVectors
   }
@@ -38,7 +41,7 @@ final class VisualizationControlPane(
   children = Seq(
     new Label("Visualization"), new Label("View:"), viewCombo,
     trailLengthField, trailAgeField, sliceField,
-    showParticles, showTrails, showVectors, vectorResolutionField
+    showParticles, showTrails, colorBySense, showVectors, vectorResolutionField
   )
 
   viewCombo.value.onChange { (_, _, next) =>
@@ -46,6 +49,7 @@ final class VisualizationControlPane(
   }
   showParticles.selected.onChange { (_, _, enabled) => update(controller.visualizationParameters.copy(showParticles = enabled)) }
   showTrails.selected.onChange { (_, _, enabled) => update(controller.visualizationParameters.copy(showTrails = enabled)) }
+  colorBySense.selected.onChange { (_, _, enabled) => update(controller.visualizationParameters.copy(colorBySense = enabled)) }
   showVectors.selected.onChange { (_, _, enabled) => update(controller.visualizationParameters.copy(showSecondaryVectors = enabled)) }
 
   /** Applies render-only changes and refreshes the current frame. */

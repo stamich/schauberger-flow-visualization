@@ -36,6 +36,7 @@ class DefaultParametersSpec extends AnyFunSuite {
     val visualization = VisualizationParameters.Default
     assert(visualization.heatMapSource == HeatMapSource.Particles)
     assert(visualization.heatMapSmoothing == 0.7)
+    assert(visualization.colorBySense)
     assert(HeatMapSource.fromDisplayName("Analytic profile") == HeatMapSource.AnalyticProfile)
     assert(HeatMapSource.fromDisplayName("unknown") == HeatMapSource.Particles)
     assertThrows[IllegalArgumentException](visualization.copy(heatMapSmoothing = 1.0))
