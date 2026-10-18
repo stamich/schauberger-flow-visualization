@@ -2,7 +2,7 @@ package io.codeswarm.schauberger.simulation
 
 import io.codeswarm.schauberger.geometry.PipeGeometry
 import io.codeswarm.schauberger.math.Vector3D
-import io.codeswarm.schauberger.model.{FlowMetrics, SimulationParameters, SimulationState}
+import io.codeswarm.schauberger.model.{FlowMetrics, RadialOccupancy, SimulationParameters, SimulationState}
 import io.codeswarm.schauberger.physics.secondary.SecondaryFlowModel
 
 /** Computes geometry-aware aggregate diagnostics without changing simulation state. */
@@ -23,6 +23,7 @@ final class FlowMetricsCalculator(
       var secondarySpeed = 0.0
       var secondaryEnergy = 0.0
       var totalEnergy = 0.0
+      val thirds = Array(0L, 0L, 0L)
 
       state.particles.foreach { particle =>
         val g = geometryContextCalculator.calculate(particle, geometry)
@@ -30,7 +31,9 @@ final class FlowMetricsCalculator(
         val radius = radial.magnitude
         val components = velocityDecomposer.decompose(particle, g)
         axial += components.axial
-        radialNorm += math.max(0.0, math.min(1.0, geometry.crossSection.normalizedRadius(g.localPosition)))
+        val normalizedRadius = math.max(0.0, math.min(1.0, geometry.crossSection.normalizedRadius(g.localPosition)))
+        radialNorm += normalizedRadius
+        thirds(RadialOccupancy.thirdOf(normalizedRadius)) += 1L
         if (radius > Vector3D.Epsilon) {
           tangential += components.tangential
           angular += components.tangential / radius
@@ -53,7 +56,8 @@ final class FlowMetricsCalculator(
         vorticityProxy = 2.0 * meanAngular,
         meanNormalizedRadialPosition = radialNorm / n,
         meanSecondaryVelocity = secondarySpeed / n,
-        secondaryFlowEnergyRatio = ratio
+        secondaryFlowEnergyRatio = ratio,
+        occupancy = RadialOccupancy.fromCounts(thirds(0), thirds(1), thirds(2))
       )
     }
   }

@@ -18,6 +18,7 @@ final class SimulationView(
   private val tangentialLabel = new Label("Tangential: --")
   private val secondaryLabel = new Label("Secondary: --")
   private val energyLabel = new Label("Secondary ratio: --")
+  private val occupancyLabel = new Label("Occupancy: --")
   private val twistLabel = new Label("Twist: --")
   private val profileLabel = new Label("Profile: --")
   private var lastTimestamp = 0L
@@ -35,6 +36,7 @@ final class SimulationView(
       profileLabel,
       secondaryLabel,
       energyLabel,
+      occupancyLabel,
       twistLabel
     )
   }
@@ -70,6 +72,7 @@ final class SimulationView(
     profileLabel.text = s"Profile: ${controller.simulationParameters.swirl.profile.id}"
     secondaryLabel.text = f"Secondary: ${metrics.meanSecondaryVelocity}%.2f"
     energyLabel.text = f"Secondary ratio: ${metrics.secondaryFlowEnergyRatio * 100.0}%.1f%%"
+    occupancyLabel.text = f"Inner/middle/outer: ${metrics.occupancy.inner * 100.0}%.0f/${metrics.occupancy.middle * 100.0}%.0f/${metrics.occupancy.outer * 100.0}%.0f%%"
     twistLabel.text = f"Twist rate: ${controller.geometry.twistRate}%.4f"
   }
 }
