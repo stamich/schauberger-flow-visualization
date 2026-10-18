@@ -1,6 +1,7 @@
 package io.codeswarm.schauberger.simulation
 
 import io.codeswarm.schauberger.geometry.{GeometryFactory, OvoidCrossSection, PipeGeometry, TwistedPipe}
+import io.codeswarm.schauberger.model.CounterRotatingParameters
 import io.codeswarm.schauberger.model.{FlowMetrics, GeometryParameters, SimulationParameters}
 import io.codeswarm.schauberger.physics.DefaultFlowForces
 import io.codeswarm.schauberger.physics.secondary.TwinVortexSecondaryFlow
@@ -97,5 +98,35 @@ class SimulationEngineSpec extends AnyFunSuite {
     // Two independent relaxations used to leave about 53% of the swirl; one target keeps all of it.
     assert(combined.meanAngularVelocity > 0.85 * alone.meanAngularVelocity)
     assert(combined.meanAngularVelocity < 1.25 * alone.meanAngularVelocity)
+  }
+
+  private val counterRotating = swirlOnly.copy(swirl = swirlOnly.swirl.copy(profile = CounterRotatingParameters()))
+
+  test("counter-rotating swirl produces particles turning both ways") {
+    val metrics = metricsAfter(defaultGeometry, counterRotating, longRun)
+    assert(metrics.regions.forwardShare > 0.25)
+    assert(metrics.regions.reverseShare > 0.25)
+    assert(metrics.regions.isCounterRotating())
+  }
+
+  test("counter-rotating swirl does not cancel to zero in the absolute measure") {
+    val metrics = metricsAfter(defaultGeometry, counterRotating, longRun)
+    assert(metrics.regions.meanAbsoluteAngular > 0.30)
+  }
+
+  test("counter-rotating swirl with balance leaves the radial distribution near its no-swirl level") {
+    val reference = metricsAfter(defaultGeometry, noSwirlReference, longRun)
+    val metrics = metricsAfter(defaultGeometry, counterRotating, longRun)
+    assert(math.abs(metrics.occupancy.outer - reference.occupancy.outer) < 0.12)
+    assert(math.abs(metrics.meanNormalizedRadialPosition - reference.meanNormalizedRadialPosition) < 0.10)
+  }
+
+  test("counter-rotating run stays finite with every particle inside the pipe") {
+    var state = engine.initialState(counterRotating, defaultGeometry)
+    (0 until 1200).foreach(_ => state = engine.step(state, counterRotating, defaultGeometry, counterRotating.fixedTimeStep))
+    assert(state.particles.size == counterRotating.particleCount)
+    assert(state.particles.forall(p => Seq(p.position.x, p.position.y, p.position.z, p.velocity.x, p.velocity.y, p.velocity.z)
+      .forall(value => !value.isNaN && !value.isInfinity)))
+    assert(state.particles.forall(p => defaultGeometry.contains(p.position)))
   }
 }

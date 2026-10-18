@@ -55,4 +55,17 @@ class AnalyticProfileFieldSamplerSpec extends AnyFunSuite {
   test("resolution below three is rejected") {
     assertThrows[IllegalArgumentException](sampler.sample(geometry, swirl, 2))
   }
+
+  test("counter-rotating vorticity is positive on the axis and negative near the wall") {
+    val parameters = swirl.copy(profile = CounterRotatingParameters())
+    val grid = sampler.sample(geometry, parameters, resolution)
+    val step = 2.0 * geometry.boundingRadius / (resolution - 1)
+    val vorticity = new VorticityFieldCalculator().calculate(grid, step)
+    def nearest(x: Double): ScalarFieldCell = vorticity.cells.filter(_.inside).minBy(c => (c.position.x - x) * (c.position.x - x) + c.position.y * c.position.y)
+    val center = nearest(0.0)
+    val shell = nearest(0.85 * geometry.characteristicRadius)
+    assert(math.abs(center.value - 2.0 * parameters.angularVelocity) < 0.1 * 2.0 * parameters.angularVelocity)
+    // The solid-body outer layer turns against the flow with 0.6 of the strength: vorticity -2 * 0.6 * omega.
+    assert(math.abs(shell.value + 2.0 * 0.6 * parameters.angularVelocity) < 0.05 * 2.0 * 0.6 * parameters.angularVelocity)
+  }
 }
