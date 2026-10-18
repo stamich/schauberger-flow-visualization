@@ -6,8 +6,16 @@ sealed trait VortexProfileParameters {
   def id: String
 }
 
+/** A profile that is a single smooth vortex.
+ *
+ * Composite profiles combine two of these layers. Restricting the layers to
+ * this type keeps composites one level deep, so a composite can never contain
+ * another composite and the factory needs no recursion.
+ */
+sealed trait SimpleVortexProfileParameters extends VortexProfileParameters
+
 /** Solid-body rotation with `vθ = ωr`. */
-case object SolidBodyParameters extends VortexProfileParameters {
+case object SolidBodyParameters extends SimpleVortexProfileParameters {
   override val id: String = "solid-body"
 }
 
@@ -15,7 +23,7 @@ case object SolidBodyParameters extends VortexProfileParameters {
  *
  * @param coreRadiusRatio core radius divided by the characteristic pipe radius
  */
-final case class RankineParameters(coreRadiusRatio: Double) extends VortexProfileParameters {
+final case class RankineParameters(coreRadiusRatio: Double) extends SimpleVortexProfileParameters {
   require(coreRadiusRatio > 0.0 && coreRadiusRatio <= 1.0)
   override val id: String = "rankine"
 }
@@ -28,7 +36,7 @@ final case class RankineParameters(coreRadiusRatio: Double) extends VortexProfil
 final case class LambOseenParameters(
                                       circulation: Double,
                                       coreRadiusRatio: Double
-                                    ) extends VortexProfileParameters {
+                                    ) extends SimpleVortexProfileParameters {
   require(circulation >= 0.0)
   require(coreRadiusRatio > 0.0 && coreRadiusRatio <= 1.0)
   override val id: String = "lamb-oseen"
