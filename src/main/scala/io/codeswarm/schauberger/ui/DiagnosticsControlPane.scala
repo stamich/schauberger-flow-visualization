@@ -1,6 +1,7 @@
 package io.codeswarm.schauberger.ui
 
 import io.codeswarm.schauberger.diagnostics.FieldType
+import io.codeswarm.schauberger.model.HeatMapSource
 import scalafx.Includes._
 import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
@@ -30,7 +31,18 @@ final class DiagnosticsControlPane(
     onValueChanged = value => update(controller.visualizationParameters.copy(heatMapResolution = value.toInt))
   )
 
-  children = Seq(new Label("Diagnostics"), showHeatMap, new Label("Field:"), fieldCombo, resolutionField)
+  private val sourceCombo = new ComboBox[String](ObservableBuffer(HeatMapSource.values.map(_.displayName): _*)) {
+    value = controller.visualizationParameters.heatMapSource.displayName
+    prefWidth = 170.0
+  }
+
+  private val smoothingField = new NumericSliderField(
+    "Heat-map smoothing:", 0.0, 0.95, controller.visualizationParameters.heatMapSmoothing,
+    0.25, 2,
+    onValueChanged = value => update(controller.visualizationParameters.copy(heatMapSmoothing = value))
+  )
+
+  children = Seq(new Label("Diagnostics"), showHeatMap, new Label("Field:"), fieldCombo, new Label("Source:"), sourceCombo, resolutionField, smoothingField)
 
   showHeatMap.selected.onChange { (_, _, enabled) =>
     update(controller.visualizationParameters.copy(showHeatMap = enabled))
@@ -38,6 +50,10 @@ final class DiagnosticsControlPane(
 
   fieldCombo.value.onChange { (_, _, next) =>
     update(controller.visualizationParameters.copy(heatMapField = FieldType.fromDisplayName(next)))
+  }
+
+  sourceCombo.value.onChange { (_, _, next) =>
+    update(controller.visualizationParameters.copy(heatMapSource = HeatMapSource.fromDisplayName(next)))
   }
 
   /** Applies render-only diagnostic settings. */

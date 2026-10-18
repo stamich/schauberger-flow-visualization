@@ -1,15 +1,18 @@
 package io.codeswarm.schauberger.visualization
 
-import io.codeswarm.schauberger.diagnostics.{CrossSectionVelocityFieldSampler, ScalarFieldCalculator}
+import io.codeswarm.schauberger.diagnostics.{AnalyticProfileFieldSampler, CrossSectionVelocityFieldSampler, ScalarFieldCalculator, TemporalFieldAverager}
 import io.codeswarm.schauberger.geometry.PipeGeometry
-import io.codeswarm.schauberger.model.{SimulationState, VisualizationParameters}
+import io.codeswarm.schauberger.model.{HeatMapSource, SimulationParameters, SimulationState, VisualizationParameters}
+import io.codeswarm.schauberger.physics.swirl.SwirlProfileFactory
 import scalafx.scene.canvas.GraphicsContext
 import scalafx.scene.paint.Color
 
 /** Renders interpolated scalar flow diagnostics as a cross-section heat map. */
 final class HeatMapRenderer(
                              velocitySampler: CrossSectionVelocityFieldSampler,
-                             scalarCalculator: ScalarFieldCalculator
+                             scalarCalculator: ScalarFieldCalculator,
+                             analyticSampler: AnalyticProfileFieldSampler = new AnalyticProfileFieldSampler(new SwirlProfileFactory),
+                             averager: TemporalFieldAverager = new TemporalFieldAverager
                            ) {
   /** Samples the selected field and paints colored grid cells beneath particles. */
   def render(
@@ -18,17 +21,28 @@ final class HeatMapRenderer(
               geometry: PipeGeometry,
               transform: ViewportTransform,
               axialPosition: Double,
+              simulation: SimulationParameters,
               visualization: VisualizationParameters
             ): Unit = {
     if (!visualization.showHeatMap) return
-    val grid = velocitySampler.sample(
-      state,
-      geometry,
-      axialPosition,
-      visualization.heatMapResolution,
-      visualization.crossSectionSliceHalfWidth
+    val grid = visualization.heatMapSource match {
+      case HeatMapSource.AnalyticProfile =>
+        analyticSampler.sample(geometry, simulation.swirl, visualization.heatMapResolution)
+      case HeatMapSource.Particles =>
+        velocitySampler.sample(
+          state,
+          geometry,
+          axialPosition,
+          visualization.heatMapResolution,
+          visualization.crossSectionSliceHalfWidth
+        )
+    }
+    val raw = scalarCalculator.calculate(visualization.heatMapField, grid, geometry)
+    val scalar = averager.update(
+      (visualization.heatMapField, visualization.heatMapSource, visualization.heatMapResolution),
+      raw,
+      visualization.heatMapSmoothing
     )
-    val scalar = scalarCalculator.calculate(visualization.heatMapField, grid, geometry)
     val range = scalar.rangeFor(visualization.heatMapField)
     val radius = geometry.boundingRadius
     val localStep = (2.0 * radius) / (visualization.heatMapResolution - 1).toDouble

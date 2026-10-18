@@ -16,7 +16,9 @@ final case class VisualizationParameters(
                                           vectorFieldResolution: Int,
                                           showHeatMap: Boolean,
                                           heatMapField: FieldType,
-                                          heatMapResolution: Int
+                                          heatMapResolution: Int,
+                                          heatMapSource: HeatMapSource = HeatMapSource.Particles,
+                                          heatMapSmoothing: Double = 0.7
                                         ) {
   require(trailLength >= 0)
   require(trailDurationSeconds >= 0.0)
@@ -25,6 +27,7 @@ final case class VisualizationParameters(
   require(crossSectionSliceHalfWidth > 0.0)
   require(vectorFieldResolution >= 3 && vectorFieldResolution <= 80)
   require(heatMapResolution >= 5 && heatMapResolution <= 80)
+  require(heatMapSmoothing >= 0.0 && heatMapSmoothing < 1.0)
 }
 
 /** Defaults balancing readability and diagnostic detail. */

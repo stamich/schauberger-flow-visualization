@@ -31,4 +31,13 @@ class DefaultParametersSpec extends AnyFunSuite {
     assert(visualization.heatMapResolution == 30)
     assert(visualization.vectorFieldResolution == 15)
   }
+
+  test("heat map defaults to the particle field with moderate smoothing") {
+    val visualization = VisualizationParameters.Default
+    assert(visualization.heatMapSource == HeatMapSource.Particles)
+    assert(visualization.heatMapSmoothing == 0.7)
+    assert(HeatMapSource.fromDisplayName("Analytic profile") == HeatMapSource.AnalyticProfile)
+    assert(HeatMapSource.fromDisplayName("unknown") == HeatMapSource.Particles)
+    assertThrows[IllegalArgumentException](visualization.copy(heatMapSmoothing = 1.0))
+  }
 }
